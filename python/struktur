@@ -1,0 +1,21 @@
+Pfoten_Card-main/
+├── backend/                -- NEUER ORDNER
+│   ├── app/
+│   │   ├── __init__.py     -- (leere Datei)
+│   │   ├── auth.py
+│   │   ├── config.py
+│   │   ├── crud.py
+│   │   ├── database.py
+│   │   ├── main.py
+│   │   ├── models.py
+│   │   └── schemas.py
+│   └── requirements.txt
+├── node_modules/           -- (existiert bereits)
+├── database.sql            -- NEUE DATEI
+├── index.css               -- (bleibt unverändert)
+├── index.html              -- WIRD ERSETZT
+├── index.tsx               -- WIRD KOMPLETT ERSETZT
+├── manifest.json           -- NEUE DATEI
+├── package.json            -- (bleibt unverändert)
+├── service-worker.js       -- NEUE DATEI
+└── ... (andere Konfig-Dateien)
