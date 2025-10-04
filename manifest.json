@@ -1,0 +1,15 @@
+{
+  "short_name": "PfotenCard",
+  "name": "Dog-School Connect - PfotenCard",
+  "icons": [
+    {
+      "src": "https://www.gstatic.com/images/branding/product/1x/google_gemini_32dp.png",
+      "type": "image/png",
+      "sizes": "32x32"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#263238",
+  "background_color": "#F3F4F6"
+}
