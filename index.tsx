@@ -373,7 +373,7 @@ const AuthScreen: FC<{ onLogin: (token: string, user: any) => void }> = ({ onLog
             <div className="auth-card">
                 <h1>PfotenCard</h1>
                 <p className="subtitle">Hundeschul-Verwaltung</p>
-                <form onSubmit={handleLogin}>
+                <form>
                     <div className="form-group">
                         <label htmlFor="email">E-Mail</label>
                         <input
@@ -397,7 +397,7 @@ const AuthScreen: FC<{ onLogin: (token: string, user: any) => void }> = ({ onLog
                         />
                     </div>
                     {error && <p style={{ color: 'var(--brand-red)', textAlign: 'center' }}>{error}</p>}
-                    <button type="submit" className="button button-primary" style={{ marginTop: '1rem', width: '100%' }} disabled={isLoading}>
+                    <button  type="button" onClick={handleLogin} className="button button-primary" style={{ marginTop: '1rem', width: '100%' }} disabled={isLoading}>
                         {isLoading ? 'Melde an...' : 'Anmelden'}
                     </button>
                 </form>
