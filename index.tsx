@@ -347,7 +347,7 @@ const AuthScreen: FC<{ onLogin: (token: string, user: any) => void }> = ({ onLog
         try {
             // Wichtig: Passe die URL an, falls dein Backend woanders läuft
            
-            const response = await fetch('${API_BASE_URL}$api/login', {
+            const response = await fetch('${API_BASE_URL}api/login', {
                 method: 'POST',
                 body: formData,
             });
