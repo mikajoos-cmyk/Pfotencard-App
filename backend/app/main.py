@@ -22,10 +22,15 @@ UPLOADS_DIR = "uploads"
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 # --- CORS Middleware ---
+origins = [
+    "https://shadowsr769.vercel.app",
+    "http://localhost:3000", # Optional: für die lokale Entwicklung
+]
+
 # Allows the frontend (running on a different port) to communicate with the backend.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict this to your frontend's URL
+    allow_origins=origins, # In production, restrict this to your frontend's URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
