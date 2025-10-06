@@ -1,21 +1,12 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from .config import settings
-import os
 
-# Argumente für die SSL-Verbindung definieren
-# Dies ist notwendig für gehostete Datenbanken wie Aiven
+# Dies ist der direkteste Weg, um mysql-connector-python
+# zur Verwendung von SSL zu zwingen, ohne komplexe Zertifikate.
 connect_args = {
-    "ssl_ca": os.environ.get("MYSQL_SSL_CA"),
-    "ssl_cert": os.environ.get("MYSQL_SSL_CERT"),
-    "ssl_key": os.environ.get("MYSQL_SSL_KEY"),
+    "ssl_disabled": False
 }
-
-# Überprüfen, ob SSL-Argumente in der Umgebung vorhanden sind.
-# Wenn nicht, wird ein leeres Dictionary verwendet (für lokale Entwicklung).
-if not all(connect_args.values()):
-    connect_args = {}
-
 
 engine = create_engine(
     settings.DATABASE_URL,
