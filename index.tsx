@@ -36,8 +36,7 @@ interface DocumentFile {
 
 
 // --- HILFSFUNKTIONEN ---
-// --- HILFSFUNKTIONEN ---
-const API_BASE_URL = 'https://pfotencard-backend.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 // Neuer API-Helfer
 const apiClient = {
@@ -347,7 +346,8 @@ const AuthScreen: FC<{ onLogin: (token: string, user: any) => void }> = ({ onLog
 
         try {
             // Wichtig: Passe die URL an, falls dein Backend woanders läuft
-            const response = await fetch('http://127.0.0.1:8000/api/login', {
+           
+            const response = await fetch('${API_BASE_URL}$api/login', {
                 method: 'POST',
                 body: formData,
             });
