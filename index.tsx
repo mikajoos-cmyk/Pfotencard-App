@@ -37,7 +37,7 @@ interface DocumentFile {
 
 // --- HILFSFUNKTIONEN ---
 // --- HILFSFUNKTIONEN ---
-const API_BASE_URL = 'https://pfotencard-backend.onrender.com' || 'http://127.0.0.1:8000';
+const API_BASE_URL = 'https://pfotencard-backend.onrender.com';
 
 // Neuer API-Helfer
 const apiClient = {
