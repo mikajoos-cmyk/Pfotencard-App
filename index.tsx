@@ -2354,7 +2354,7 @@ const handleSaveUser = async (userData: any) => {
       try {
         await apiClient.put(`/api/users/${userModal.user.id}`, userData, authToken);
         await fetchAppData();
-        alert('Benutzer erfolgreich aktualisiert!');
+        console.log('Benutzer erfolgreich aktualisiert!');
       } catch (error) {
         console.error("Fehler beim Aktualisieren des Benutzers:", error);
         alert(`Fehler: ${error}`);
@@ -2364,7 +2364,7 @@ const handleSaveUser = async (userData: any) => {
         // Das userData-Objekt enthält jetzt das Passwort aus dem Formular
         await apiClient.post('/api/users', userData, authToken);
         await fetchAppData();
-        alert('Benutzer erfolgreich angelegt!');
+        console.log('Benutzer erfolgreich angelegt!');
       } catch (error) {
         console.error("Fehler beim Anlegen des Benutzers:", error);
         alert(`Fehler: ${error}`);
