@@ -325,28 +325,47 @@ const Icon = ({ name, viewBox, ...props }: { name: string, viewBox?: string } & 
     return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>{icons[name] || null}</svg>;
 };
 
-// --- AUTH KOMPONENTE ---
-// In frontend/index.tsx
+// --- NEUE LADE-KOMPONENTE ---
+const LoadingSpinner: FC<{ message: string }> = ({ message }) => (
+    <div style={{
+        position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+        zIndex: 9999,
+    }}>
+        <svg width="60" height="60" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#16a34a">
+            <path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25"/>
+            <path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z">
+                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.75s" repeatCount="indefinite"/>
+            </path>
+        </svg>
+        <p style={{ marginTop: '1rem', fontSize: '1.1rem', fontWeight: 500, color: '#334155' }}>{message}</p>
+    </div>
+);
 
 // --- AUTH KOMPONENTE ---
-const AuthScreen: FC<{ onLogin: (token: string, user: any) => void }> = ({ onLogin }) => {
-    const [email, setEmail] = useState('admin@pfotencard.de'); // Voreingestellt zum Testen
-    const [password, setPassword] = useState('passwort'); // Voreingestellt zum Testen
+const AuthScreen: FC<{
+    onLoginStart: () => void;
+    onLoginEnd: () => void;
+    onLoginSuccess: (token: string, user: any) => void;
+}> = ({ onLoginStart, onLoginEnd, onLoginSuccess }) => {
+    const [email, setEmail] = useState('admin@pfotencard.de');
+    const [password, setPassword] = useState('passwort');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false); // NEU: State für die Passwort-Sichtbarkeit
 
     const handleLogin = async (e: FormEvent) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
+        onLoginStart();
 
         const formData = new FormData();
         formData.append('username', email);
         formData.append('password', password);
 
         try {
-            // Wichtig: Passe die URL an, falls dein Backend woanders läuft
-           
             const response = await fetch(`${API_BASE_URL}/api/login`, {
                 method: 'POST',
                 body: formData,
@@ -358,13 +377,13 @@ const AuthScreen: FC<{ onLogin: (token: string, user: any) => void }> = ({ onLog
             }
 
             const data = await response.json();
-            // data hat die Struktur: { access_token: "...", token_type: "bearer", user: {...} }
-            onLogin(data.access_token, data.user);
+            onLoginSuccess(data.access_token, data.user);
 
         } catch (err: any) {
             setError(err.message);
         } finally {
             setIsLoading(false);
+            onLoginEnd();
         }
     };
 
@@ -387,17 +406,38 @@ const AuthScreen: FC<{ onLogin: (token: string, user: any) => void }> = ({ onLog
                     </div>
                     <div className="form-group">
                         <label htmlFor="password">Passwort</label>
-                        <input
-                            type="password"
-                            id="password"
-                            className="form-input"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
+                        {/* NEU: Ein div, um Input und Button zu gruppieren */}
+                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                            <input
+                                // GEÄNDERT: Der Typ ist jetzt dynamisch
+                                type={showPassword ? 'text' : 'password'}
+                                id="password"
+                                className="form-input"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                style={{ paddingRight: '2.5rem' }} // Platz für das Icon schaffen
+                            />
+                            {/* NEU: Der Button zum Umschalten */}
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '0.5rem',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: 'var(--text-secondary)'
+                                }}
+                                aria-label="Passwort anzeigen/verbergen"
+                            >
+                                <Icon name={showPassword ? 'eye-off' : 'eye'} />
+                            </button>
+                        </div>
                     </div>
                     {error && <p style={{ color: 'var(--brand-red)', textAlign: 'center' }}>{error}</p>}
-                    <button  type="button" onClick={handleLogin} className="button button-primary" style={{ marginTop: '1rem', width: '100%' }} disabled={isLoading}>
+                    <button type="button" onClick={handleLogin} className="button button-primary" style={{ marginTop: '1rem', width: '100%' }} disabled={isLoading}>
                         {isLoading ? 'Melde an...' : 'Anmelden'}
                     </button>
                 </form>
@@ -2086,8 +2126,11 @@ const App: FC = () => {
   const [deleteUserModal, setDeleteUserModal] = useState<User | null>(null);
 
   const [deletingDocument, setDeletingDocument] = useState<any | null>(null);
-    const [dogFormModal, setDogFormModal] = useState<{ isOpen: boolean; dog: any | null }>({ isOpen: false, dog: null }); // <-- NEU
-    const [deletingDog, setDeletingDog] = useState<any | null>(null); // <-- NEU
+  const [dogFormModal, setDogFormModal] = useState<{ isOpen: boolean; dog: any | null }>({ isOpen: false, dog: null }); // <-- NEU
+  const [deletingDog, setDeletingDog] = useState<any | null>(null); // <-- NEU
+
+  const [isServerLoading, setServerLoading] = useState<{ active: boolean; message: string }>({ active: false, message: '' });
+  
   useEffect(() => {
     const handleResize = () => {
         const isMobile = window.innerWidth <= 992;
@@ -2137,6 +2180,7 @@ useEffect(() => {
     localStorage.setItem('authToken', token); // Token im localStorage speichern
     setAuthToken(token);
     setLoggedInUser(user);
+    setServerLoading({ active: false, message: '' });
   };
 
   // Funktion zum Ausloggen
@@ -2483,7 +2527,16 @@ const handleConfirmDeleteDocument = async () => {
   }
 
   if (!authToken || !loggedInUser) {
-    return <AuthScreen onLogin={handleLoginSuccess} />;
+    return (
+      <>
+        {isServerLoading.active && <LoadingSpinner message={isServerLoading.message} />}
+        <AuthScreen
+          onLoginStart={() => setServerLoading({ active: true, message: 'Verbinde mit Server...' })}
+          onLoginEnd={() => setServerLoading({ active: false, message: '' })}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      </>
+    );
   }
 
 
@@ -2576,6 +2629,7 @@ const handleConfirmDeleteDocument = async () => {
 
   return (
     <div className={`app-container ${isSidebarOpen ? "sidebar-open" : ""}`}>
+      {isServerLoading.active && <LoadingSpinner message={isServerLoading.message} />}
       <Sidebar user={loggedInUser} activePage={view.page} setView={setView} onLogout={() => setLoggedInUser(null)} setSidebarOpen={setIsSidebarOpen} />
       <main className="main-content">
         {isMobileView && (
