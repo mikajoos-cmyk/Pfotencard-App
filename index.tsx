@@ -343,18 +343,15 @@ const Icon = ({ name, ...props }: { name: string } & React.SVGProps<SVGSVGElemen
 
     const customClassName = props.className || '';
 
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            // Hinzugefügte Zeile für dynamische Klassen
-            className={`icon icon-${name} ${customClassName}`.trim()}
-            {...finalProps}
-        >
-            {selectedIcon.path}
-        </svg>
-    );
+   return (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className={`icon icon-${name} ${customClassName}`.trim()}
+        {...finalProps}
+    >
+        {selectedIcon.path}
+    </svg>
+);
 };
 
 // --- NEUE LADE-KOMPONENTE ---
