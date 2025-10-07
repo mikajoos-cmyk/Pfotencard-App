@@ -972,3 +972,7 @@ body {
         display: none;
     }
 }
+/* Korrektur für die Grösse des Pfoten-Icons */
+.data-field .icon-paw {
+    transform: scale(1.25);
+}
