@@ -289,10 +289,7 @@ const areLevelRequirementsMet = (customer: any): boolean => {
 
 
 // --- ICONS ---
-// --- ICONS ---
 const Icon = ({ name, ...props }: { name: string } & React.SVGProps<SVGSVGElement>) => {
-    // Die Icons werden jetzt als Objekte gespeichert, die den Pfad und optionale,
-    // überschreibende Eigenschaften enthalten können.
     const icons: { [key: string]: { path: React.ReactNode; customProps?: any } } = {
         dashboard: { path: <><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></> },
         customers: { path: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></> },
@@ -308,9 +305,10 @@ const Icon = ({ name, ...props }: { name: string } & React.SVGProps<SVGSVGElemen
         arrowDown: { path: <><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></> },
         check: { path: <><path d="M20 6 9 17l-5-5"/></> },
         x: { path: <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></> },
+        // KORRIGIERTES PAW-ICON
         paw: {
-            path: <path d="M12.98 3.25a2.25 2.25 0 0 0-2.12 1.5L9.5 9.25a3.75 3.75 0 0 1-6.94-.25L1.5 3.5a2.25 2.25 0 0 0-2.12-1.5c-1.3 0-2.38 1.12-2.38 2.5v.5a2.25 2.25 0 0 0 1.13 2c1.4.93 3.38 2.5 3.38 2.5s2.05-1.5 3.5-2.5a2.25 2.25 0 0 0 1.12-2v-.5c0-1.38-1.07-2.5-2.37-2.5Z M22.5 3.5a2.25 2.25 0 0 0-2.13-1.5c-1.3 0-2.37 1.12-2.37 2.5v.5a2.25 2.25 0 0 0 1.12 2c1.46.94 3.44 2.5 3.44 2.5s1.98-1.56 3.38-2.5a2.25 2.25 0 0 0 1.13-2v-.5c0-1.38-1.08-2.5-2.38-2.5s-2.38 1.12-2.38 2.5Z"/>,
-            customProps: { viewBox: "0 0 30 15", fill: "currentColor", stroke: "none" }
+            path: <path d="M12 5.6a3.2 3.2 0 0 0-3.2 3.2c0 2.4 2.2 4.9 2.9 5.5.1.1.3.1.4 0 .7-.6 2.9-3.1 2.9-5.5A3.2 3.2 0 0 0 12 5.6Z M4.7 9.8a2.1 2.1 0 0 0-2.1 2.1c0 1.6 1.5 3.2 1.9 3.6.1.1.3.1.4 0 .4-.4 1.9-2 1.9-3.6a2.1 2.1 0 0 0-2.1-2.1Z M19.3 9.8a2.1 2.1 0 0 0-2.1 2.1c0 1.6 1.5 3.2 1.9 3.6.1.1.3.1.4 0 .4-.4 1.9-2 1.9-3.6a2.1 2.1 0 0 0-2.1-2.1Z M8.3 4.2a2.3 2.3 0 0 0-2.3 2.3c0 1.7 1.6 3.5 2.1 4 .1.1.3.1.4 0 .5-.5 2.1-2.3 2.1-4a2.3 2.3 0 0 0-2.3-2.3Z M15.7 4.2a2.3 2.3 0 0 0-2.3 2.3c0 1.7 1.6 3.5 2.1 4 .1.1.3.1.4 0 .5-.5 2.1-2.3 2.1-4a2.3 2.3 0 0 0-2.3-2.3Z"/>,
+            customProps: { fill: "currentColor", stroke: "none" }
         },
         creditCard: { path: <><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></> },
         heart: { path: <><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></> },
@@ -332,7 +330,6 @@ const Icon = ({ name, ...props }: { name: string } & React.SVGProps<SVGSVGElemen
     const selectedIcon = icons[name];
     if (!selectedIcon) return null;
 
-    // Standard-Eigenschaften für die meisten Icons
     const defaultProps = {
         viewBox: "0 0 24 24",
         fill: "none",
@@ -342,7 +339,6 @@ const Icon = ({ name, ...props }: { name: string } & React.SVGProps<SVGSVGElemen
         strokeLinejoin: "round",
     };
     
-    // Kombiniere die Standard-, die von aussen übergebenen und die Icon-spezifischen Eigenschaften
     const finalProps = { ...defaultProps, ...props, ...selectedIcon.customProps };
 
     return (
