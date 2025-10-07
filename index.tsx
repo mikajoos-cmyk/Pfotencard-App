@@ -537,7 +537,7 @@ const Sidebar: FC<{ user: User; activePage: Page; setView: (view: View) => void;
     return (
         <aside className="sidebar">
             <div className="sidebar-header">
-                <Icon name="paw" className="logo" />
+                <Icon name="paw" className="logo"  width="38" height="38" />
                 <h2>PfotenCard</h2>
                 <button className="sidebar-close-button" onClick={() => setSidebarOpen(false)} aria-label="Menü schließen">
                     <Icon name="x" />
@@ -2378,7 +2378,7 @@ const handleSaveUser = async (userData: any) => {
       try {
         await apiClient.delete(`/api/users/${deleteUserModal.id}`, authToken);
         await fetchAppData(); // Lade die Benutzerliste neu
-        config.log('Benutzer erfolgreich gelöscht!');
+        console.log('Benutzer erfolgreich gelöscht!');
       } catch (error) {
         console.error("Fehler beim Löschen des Benutzers:", error);
         alert(`Fehler: ${error}`);
