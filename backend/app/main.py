@@ -24,7 +24,10 @@ os.makedirs(UPLOADS_DIR, exist_ok=True)
 # --- CORS Middleware ---
 origins = [
     "https://shadowsr769.vercel.app",
-    "http://localhost:3000", # Optional: für die lokale Entwicklung
+    "http://localhost:3000",         # Gängiger React-Port
+    "http://localhost:5173",         # Gängiger Vite-Port
+    "http://127.0.0.1:5173",         # Vite-Port mit IP statt Name
+    "http://127.0.0.1:3000",         # React-Port mit IP statt Name
 ]
 
 # Allows the frontend (running on a different port) to communicate with the backend.
@@ -72,8 +75,22 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered")
     return crud.create_user(db=db, user=user)
 
+
+# In backend/app/main.py
+
 @app.get("/api/users", response_model=List[schemas.User])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_users(
+        skip: int = 0,
+        limit: int = 100,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(auth.get_current_active_user)
+):
+    # Sicherheitsprüfung: Nur Admins und Mitarbeiter dürfen die Nutzerliste abrufen.
+    if current_user.role not in ['admin', 'mitarbeiter']:
+        raise HTTPException(status_code=403, detail="Not authorized to access this resource")
+
+    # Hier können wir die Logik für Mitarbeiter-Portfolios später einfügen, falls nötig.
+    # Fürs Erste ist die Funktion für berechtigte Nutzer unverändert.
     users = crud.get_users(db, skip=skip, limit=limit)
     return users
 
@@ -142,12 +159,29 @@ def search_users(q: str, db: Session = Depends(get_db)):
     users = crud.search_users(db, search_term=q)
     return users
 
+
+# In backend/app/main.py
+
 @app.get("/api/users/{user_id}", response_model=schemas.User)
-def read_user(user_id: int, db: Session = Depends(get_db)):
-    db_user = crud.get_user(db, user_id=user_id)
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return db_user
+def read_user(
+        user_id: int,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(auth.get_current_active_user)
+):
+    # Admins und Mitarbeiter dürfen jeden beliebigen Nutzer/Kunden aufrufen.
+    if current_user.role in ['admin', 'mitarbeiter']:
+        db_user = crud.get_user(db, user_id=user_id)
+        if db_user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        return db_user
+
+    # Kunden dürfen nur ihr eigenes Profil aufrufen.
+    elif current_user.role == 'kunde' and current_user.id == user_id:
+        return crud.get_user(db, user_id=user_id)
+
+    # Alle anderen Anfragen werden blockiert.
+    else:
+        raise HTTPException(status_code=403, detail="Not authorized to access this user")
 
 @app.delete("/api/users/{user_id}", status_code=status.HTTP_200_OK)
 def delete_user_endpoint(
@@ -175,21 +209,29 @@ def create_transaction(
          raise HTTPException(status_code=403, detail="Not authorized to perform this action")
     return crud.create_transaction(db=db, transaction=transaction, booked_by=current_user)
 
-@app.get("/api/transactions", response_model=List[schemas.Transaction])
-def read_transactions(
-    skip: int = 0, limit: int = 200, # Limit erhöht, um sicher alle zu bekommen
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(auth.get_current_active_user)
-):
-    # Nur Admins und Mitarbeiter dürfen alle Transaktionen sehen
-    if current_user.role not in ['admin', 'mitarbeiter']:
-         raise HTTPException(status_code=403, detail="Not authorized to perform this action")
-    return crud.get_transactions(db=db, skip=skip, limit=limit)
 
-# --- Add other endpoints for dogs, documents, etc. as needed ---
 # In backend/app/main.py
 
-# FÜGE DIESEN CODE ZUM TESTEN AM ENDE DER DATEI HINZU
+@app.get("/api/transactions", response_model=List[schemas.Transaction])
+def read_transactions(
+        skip: int = 0,
+        limit: int = 200,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(auth.get_current_active_user)
+):
+    if current_user.role == 'kunde':
+        return crud.get_transactions_for_user(db=db, user_id=current_user.id)
+
+    # NEU: Eigener Fall für Mitarbeiter
+    if current_user.role == 'mitarbeiter':
+        return crud.get_transactions_for_user(db=db, user_id=current_user.id, for_staff=True)
+
+    if current_user.role == 'admin':
+        return crud.get_transactions(db=db, skip=skip, limit=limit)
+
+    raise HTTPException(status_code=403, detail="Not authorized to perform this action")
+
+    # FÜGE DIESEN CODE ZUM TESTEN AM ENDE DER DATEI HINZU
 @app.get("/api/test-password")
 def test_password_verification():
     # Das Passwort, das wir testen
@@ -307,3 +349,11 @@ def delete_dog_endpoint(
     if result is None:
         raise HTTPException(status_code=404, detail="Dog not found")
     return result
+
+
+@app.post("/api/register", response_model=schemas.User)
+def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_email(db, email=user.email)
+    if db_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    return crud.create_user(db=db, user=user)

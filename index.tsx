@@ -187,11 +187,13 @@ const LEVEL_REQUIREMENTS: { [key: number]: { id: string; name: string; required:
   4: [{ id: 'social_walk', name: 'Social Walk', required: 6 }, { id: 'tavern_training', name: 'Wirtshaustraining', required: 2 }, { id: 'exam', name: 'Prüfung', required: 1 }],
   5: [{ id: 'exam', name: 'Prüfung', required: 1 }],
 };
+// In frontend/index.tsx
+
 const DOGLICENSE_PREREQS = [
   { id: 'lecture_bonding', name: 'Vortrag Bindung & Beziehung', required: 1 },
   { id: 'lecture_hunting', name: 'Vortrag Jagdverhalten', required: 1 },
   { id: 'ws_communication', name: 'WS Kommunikation & Körpersprache', required: 1 },
-  { id: 'ws_stress', name: 'WS Stress- & Impulskontrolle', required: 1 },
+  { id: 'ws_stress', name: 'WS Stress & Impulskontrolle', required: 1 },
   { id: 'theory_license', name: 'Theorieabend Hundeführerschein', required: 1 },
   { id: 'first_aid', name: 'Erste-Hilfe-Kurs', required: 1},
 ];
@@ -216,42 +218,19 @@ const getPrereqProgress = (customer: any, untilDate?: Date) => {
     return progress;
 };
 
+// In frontend/index.tsx
+
 const getProgressForLevel = (customer: any, levelId: number) => {
     const progress: { [key: string]: number } = {};
-    const requirements = LEVEL_REQUIREMENTS[levelId] || [];
+    // Wähle die richtigen Anforderungen: normale Level oder die Zusatzveranstaltungen für Level 5
+    const requirements = levelId === 5 ? DOGLICENSE_PREREQS : (LEVEL_REQUIREMENTS[levelId] || []);
     if (requirements.length === 0) return progress;
 
-    // KORREKTUR: Berücksichtige von Anfang an nur die unverbrauchten Lektionen
     const unconsumedAchievements = (customer.achievements || []).filter((ach: any) => !ach.is_consumed);
 
-    // Die bestehende, detaillierte Logik für Level 5 bleibt erhalten,
-    // arbeitet aber jetzt mit der gefilterten Liste der "unconsumedAchievements".
-    if (levelId === 5) {
-        const examAchievements = unconsumedAchievements.filter((ach: any) => ach.requirement_id === 'exam');
-
-        examAchievements.forEach((examAch: any) => {
-            // Die Prüfung der Voraussetzungen muss den gesamten Verlauf des Kunden berücksichtigen,
-            // daher wird hier 'customer' mit allen Achievements übergeben.
-            const prereqProgressAtExamTime = getPrereqProgress(customer, new Date(examAch.date_achieved));
-            const allPrereqsMetAtExamTime = DOGLICENSE_PREREQS.every(req => (prereqProgressAtExamTime[req.id] || 0) >= req.required);
-
-            if (allPrereqsMetAtExamTime) {
-                progress['exam'] = (progress['exam'] || 0) + 1;
-            }
-        });
-
-        unconsumedAchievements.forEach((ach: any) => {
-            if (ach.requirement_id !== 'exam') {
-                 progress[ach.requirement_id] = (progress[ach.requirement_id] || 0) + 1;
-            }
-        });
-
-    } else {
-        // Normale Zählung für alle anderen Level, aber nur mit den unverbrauchten Lektionen
-        unconsumedAchievements.forEach((ach: any) => {
-            progress[ach.requirement_id] = (progress[ach.requirement_id] || 0) + 1;
-        });
-    }
+    unconsumedAchievements.forEach((ach: any) => {
+        progress[ach.requirement_id] = (progress[ach.requirement_id] || 0) + 1;
+    });
 
     return progress;
 };
@@ -259,31 +238,36 @@ const getProgressForLevel = (customer: any, levelId: number) => {
 const areLevelRequirementsMet = (customer: any): boolean => {
     const currentLevelId = customer.level_id || 1;
 
-    if (currentLevelId === 1) {
-        return true;
-    }
-
-    // Spezielle Prüfung für Level 5 (Voraussetzung für Experten-Status)
+    // Fall 1: Kunde ist in Level 5 (Hundeführerschein)
+    // Wir prüfen, ob er die Prüfung UND alle Zusatzveranstaltungen hat.
     if (currentLevelId === 5) {
-        const requirements = LEVEL_REQUIREMENTS[5];
-        const prereqs = DOGLICENSE_PREREQS;
-        const progress = getProgressForLevel(customer, 5);
-        const prereqProgress = getPrereqProgress(customer);
+        const examReqs = LEVEL_REQUIREMENTS[5];
+        const examProgress = getProgressForLevel(customer, 5); // Prüft nur 'exam'
+        const prereqProgress = getProgressForLevel(customer, 5); // Prüft die Zusatzveranstaltungen
 
-        const mainReqMet = requirements.every(req => (progress[req.id] || 0) >= req.required);
-        const prereqsMet = prereqs.every(req => (prereqProgress[req.id] || 0) >= req.required);
-        return mainReqMet && prereqsMet;
+        const examMet = examReqs.every(req => (examProgress[req.id] || 0) >= req.required);
+        const prereqsMet = DOGLICENSE_PREREQS.every(req => (prereqProgress[req.id] || 0) >= req.required);
+
+        return examMet && prereqsMet;
     }
 
-    // Kann nicht weiter aufsteigen, wenn Level 5 bereits überschritten wurde
-    if (currentLevelId > 5) return false;
+    // Fall 2: Kunde ist in Level 1-4
+    // Wir prüfen die Anforderungen des aktuellen Levels, um zu sehen, ob er aufsteigen kann.
+    const requirements = LEVEL_REQUIREMENTS[currentLevelId];
+    if (!requirements) return true; // Level 1 hat keine Anforderungen zum Abschluss
 
-    // Normale Prüfung für den Aufstieg in das NÄCHSTE Level (z.B. von 1 nach 2)
-    const nextLevelId = currentLevelId + 1;
-    const requirements = LEVEL_REQUIREMENTS[nextLevelId];
-    if (!requirements) return true; // Keine Anforderungen definiert, Aufstieg möglich
+    const progress = getProgressForLevel(customer, currentLevelId);
 
-    const progress = getProgressForLevel(customer, nextLevelId);
+    // Prüfen, ob alle Voraussetzungen für eine Prüfung in diesem Level erfüllt sind
+    const examRequirement = requirements.find(r => r.id === 'exam');
+    if (examRequirement) {
+        const otherRequirements = requirements.filter(r => r.id !== 'exam');
+        const nonExamReqsMet = otherRequirements.every(req => (progress[req.id] || 0) >= req.required);
+        // Wenn die normalen Anforderungen UND die Prüfung erfüllt sind
+        return nonExamReqsMet && (progress['exam'] || 0) >= examRequirement.required;
+    }
+
+    // Wenn es keine Prüfung gibt, einfach alle Anforderungen prüfen
     return requirements.every(req => (progress[req.id] || 0) >= req.required);
 };
 
@@ -375,16 +359,21 @@ const LoadingSpinner: FC<{ message: string }> = ({ message }) => (
 );
 
 // --- AUTH KOMPONENTE ---
+// In frontend/index.tsx in der AuthScreen Komponente
+
 const AuthScreen: FC<{
     onLoginStart: () => void;
     onLoginEnd: () => void;
     onLoginSuccess: (token: string, user: any) => void;
 }> = ({ onLoginStart, onLoginEnd, onLoginSuccess }) => {
+    const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('admin@pfotencard.de');
     const [password, setPassword] = useState('passwort');
+    const [name, setName] = useState('');
+    const [dogName, setDogName] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false); // NEU: State für die Passwort-Sichtbarkeit
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleLogin = async (e: FormEvent) => {
         e.preventDefault();
@@ -418,60 +407,83 @@ const AuthScreen: FC<{
         }
     };
 
+    const handleRegister = async (e: FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setIsLoading(true);
+        onLoginStart();
+
+        const payload = {
+            name: name,
+            email: email,
+            password: password,
+            role: "kunde",
+            dogs: [{ name: dogName }]
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Registrierung fehlgeschlagen');
+            }
+            alert('Registrierung erfolgreich! Sie können sich jetzt anmelden.');
+            setIsLogin(true); // Zurück zum Login-Formular
+
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+            onLoginEnd();
+        }
+    };
+
     return (
         <div className="auth-container">
             <div className="auth-card">
                 <h1>PfotenCard</h1>
-                <p className="subtitle">Hundeschul-Verwaltung</p>
-                <form>
+                <p className="subtitle">{isLogin ? 'Hundeschul-Verwaltung' : 'Neues Kundenkonto erstellen'}</p>
+                <form onSubmit={isLogin ? handleLogin : handleRegister}>
+                    {!isLogin && (
+                        <>
+                            <div className="form-group">
+                                <label htmlFor="name">Ihr Name</label>
+                                <input type="text" id="name" className="form-input" value={name} onChange={(e) => setName(e.target.value)} required />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="dogName">Name Ihres Hundes</label>
+                                <input type="text" id="dogName" className="form-input" value={dogName} onChange={(e) => setDogName(e.target.value)} required />
+                            </div>
+                        </>
+                    )}
                     <div className="form-group">
                         <label htmlFor="email">E-Mail</label>
-                        <input
-                            type="email"
-                            id="email"
-                            className="form-input"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
+                        <input type="email" id="email" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} required />
                     </div>
                     <div className="form-group">
                         <label htmlFor="password">Passwort</label>
-                        {/* NEU: Ein div, um Input und Button zu gruppieren */}
                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <input
-                                // GEÄNDERT: Der Typ ist jetzt dynamisch
-                                type={showPassword ? 'text' : 'password'}
-                                id="password"
-                                className="form-input"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                style={{ paddingRight: '2.5rem' }} // Platz für das Icon schaffen
-                            />
-                            {/* NEU: Der Button zum Umschalten */}
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                style={{
-                                    position: 'absolute',
-                                    right: '0.5rem',
-                                    background: 'none',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    color: 'var(--text-secondary)'
-                                }}
-                                aria-label="Passwort anzeigen/verbergen"
-                            >
+                            <input type={showPassword ? 'text' : 'password'} id="password" className="form-input" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ paddingRight: '2.5rem' }} />
+                            <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} aria-label="Passwort anzeigen/verbergen">
                                 <Icon name={showPassword ? 'eye-off' : 'eye'} />
                             </button>
                         </div>
                     </div>
                     {error && <p style={{ color: 'var(--brand-red)', textAlign: 'center' }}>{error}</p>}
-                    <button type="button" onClick={handleLogin} className="button button-primary" style={{ marginTop: '1rem', width: '100%' }} disabled={isLoading}>
-                        {isLoading ? 'Melde an...' : 'Anmelden'}
+                    <button type="submit" className="button button-primary" style={{ marginTop: '1rem', width: '100%' }} disabled={isLoading}>
+                        {isLoading ? (isLogin ? 'Melde an...' : 'Registriere...') : (isLogin ? 'Anmelden' : 'Registrieren')}
                     </button>
                 </form>
+                <button onClick={() => setIsLogin(!isLogin)} className="button-as-link" style={{ marginTop: '1rem', width: '100%' }}>
+                    {isLogin ? 'Noch kein Konto? Jetzt registrieren' : 'Bereits ein Konto? Zum Login'}
+                </button>
             </div>
         </div>
     );
@@ -573,7 +585,14 @@ const Sidebar: FC<{ user: User; activePage: Page; setView: (view: View) => void;
     );
 };
 
-const CustomerSidebar: FC<{ user: User; onLogout: () => void; setSidebarOpen: (isOpen: boolean) => void; }> = ({ user, onLogout, setSidebarOpen }) => {
+
+const CustomerSidebar: FC<{
+    user: User;
+    onLogout: () => void;
+    setSidebarOpen: (isOpen: boolean) => void;
+    activePage: 'overview' | 'transactions'; // NEU
+    setPage: (page: 'overview' | 'transactions') => void; // NEU
+}> = ({ user, onLogout, setSidebarOpen, activePage, setPage }) => {
     return (
         <aside className="sidebar">
             <div className="sidebar-header">
@@ -585,9 +604,15 @@ const CustomerSidebar: FC<{ user: User; onLogout: () => void; setSidebarOpen: (i
             </div>
             <OnlineStatusIndicator />
             <nav className="sidebar-nav">
-                <a href="#" className="nav-link active" onClick={(e) => e.preventDefault()}>
+                {/* Link zur Haupt-Übersicht */}
+                <a href="#" className={`nav-link ${activePage === 'overview' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); setPage('overview'); }}>
                     <Icon name="user" />
                     <span>Meine Karte</span>
+                </a>
+                {/* NEUER Link zur Transaktionsseite */}
+                <a href="#" className={`nav-link ${activePage === 'transactions' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); setPage('transactions'); }}>
+                    <Icon name="creditCard" />
+                    <span>Meine Transaktionen</span>
                 </a>
             </nav>
             <div className="sidebar-footer">
@@ -1220,7 +1245,7 @@ const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
                         </div>
                     )}
                 </div>
-                {isActive && showLevelUpButton && level.id < 5 && <LevelUpButtonComponent customerId={String(customer.id)} nextLevelId={level.id + 1} />}
+                {isActive && showLevelUpButton && <LevelUpButtonComponent customerId={String(customer.id)} nextLevelId={level.id + 1} />}
             </React.Fragment>
         );
     })}
@@ -1249,7 +1274,7 @@ const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
                     </div>
                     <div className="side-card qr-code-container">
                         <h2>QR-Code</h2>
-                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${customer.id}`} alt="QR Code" />
+                            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/customer/${customer.id}`} alt="QR Code" />
                         <p>Scannen, um diese Kundenkarte schnell aufzurufen.</p>
                     </div>
                     <div className="side-card">
@@ -2065,6 +2090,47 @@ const DeleteDocumentModal: FC<{ document: any; onClose: () => void; onConfirm: (
     </div>
 );
 
+const CustomerTransactionsPage: FC<{ transactions: any[] }> = ({ transactions }) => {
+    return (
+        <>
+            <header className="page-header">
+                <h1>Meine Transaktionen</h1>
+                <p>Hier sehen Sie eine Übersicht aller Ihrer Buchungen.</p>
+            </header>
+            <div className="content-box">
+                <ul className="detailed-transaction-list">
+                    {transactions.length > 0 ? (
+                        transactions
+                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                            .map(tx => (
+                            <li key={tx.id}>
+                                <div className={`tx-icon ${tx.amount < 0 ? 'debit' : 'topup'}`}>
+                                    <Icon name={tx.amount < 0 ? 'arrowDown' : 'trendingUp'} />
+                                </div>
+                                <div className="tx-details">
+                                    <div className="tx-line-1">
+                                        <span className="tx-title">{tx.description}</span>
+                                    </div>
+                                    <div className="tx-line-2">
+                                        <span>{new Date(tx.date).toLocaleDateString('de-DE', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                    </div>
+                                </div>
+                                <div className={`tx-amount ${tx.amount < 0 ? 'debit' : 'topup'}`}>
+                                    {tx.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                                </div>
+                            </li>
+                        ))
+                    ) : (
+                        <p style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0'}}>
+                            Sie haben noch keine Transaktionen.
+                        </p>
+                    )}
+                </ul>
+            </div>
+        </>
+    );
+};
+
 const BenutzerPage: FC<{
     users: User[];
     onAddUserClick: () => void;
@@ -2161,7 +2227,8 @@ const App: FC = () => {
   const [deletingDog, setDeletingDog] = useState<any | null>(null); // <-- NEU
 
   const [isServerLoading, setServerLoading] = useState<{ active: boolean; message: string }>({ active: false, message: '' });
-  
+  const [customerPage, setCustomerPage] = useState<'overview' | 'transactions'>('overview');
+ const [directAccessedCustomer, setDirectAccessedCustomer] = useState<any | null>(null);
   useEffect(() => {
     const handleResize = () => {
         const isMobile = window.innerWidth <= 992;
@@ -2174,8 +2241,38 @@ const App: FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    // Diese Logik wird ausgeführt, wenn die App lädt oder der Nutzer sich einloggt.
+    if (loggedInUser && loggedInUser.role !== 'kunde') {
+        const path = window.location.pathname;
+        const match = path.match(/customer\/(\d+)/); // Passt auf URLs wie /customer/123
 
-  const fetchAppData = async () => {
+        // Wenn eine Kunden-ID in der URL gefunden wird (durch QR-Scan)
+        if (match && match[1]) {
+            const customerId = parseInt(match[1]);
+
+            // Lade den Kunden direkt vom Server, um das Portfolio zu umgehen
+            setServerLoading({ active: true, message: 'Lade Kundendaten...' });
+            apiClient.get(`/api/users/${customerId}`, authToken)
+                .then(customerData => {
+                    setDirectAccessedCustomer(customerData); // Speichere den Kunden in unserem neuen State
+                    setView({ page: 'customers', subPage: 'detail', customerId: String(customerId) });
+                })
+                .catch(err => {
+                    console.error("Fehler beim Laden des Kunden via QR-Code:", err);
+                    alert("Kunde konnte nicht gefunden oder geladen werden.");
+                    window.history.pushState({}, '', '/'); // URL zurücksetzen
+                })
+                .finally(() => {
+                    setServerLoading({ active: false, message: '' });
+                });
+        }
+    }
+  }, [loggedInUser]); // Abhängig vom Login-Status
+
+// In frontend/index.tsx
+
+const fetchAppData = async () => {
     if (!authToken) {
         setIsLoading(false);
         return;
@@ -2185,14 +2282,24 @@ const App: FC = () => {
         const currentUser = await apiClient.get('/api/users/me', authToken);
         setLoggedInUser(currentUser);
 
-        const [usersResponse, transactionsResponse] = await Promise.all([
-            apiClient.get('/api/users', authToken),
-            apiClient.get('/api/transactions', authToken)
-        ]);
+        if (currentUser.role === 'kunde') {
+            // Ein Kunde holt NUR seine eigenen Transaktionen.
+            // Der Aufruf von /api/users wird bewusst ausgelassen, um einen 403-Fehler zu vermeiden.
+            const transactionsResponse = await apiClient.get('/api/transactions', authToken);
+            setTransactions(transactionsResponse);
+            setCustomers([currentUser]);
+            setUsers([currentUser]);
+        } else {
+            // Admins und Mitarbeiter laden alles wie bisher.
+            const [usersResponse, transactionsResponse] = await Promise.all([
+                apiClient.get('/api/users', authToken),
+                apiClient.get('/api/transactions', authToken)
+            ]);
+            setCustomers(usersResponse.filter((user: any) => user.role === 'kunde'));
+            setUsers(usersResponse);
+            setTransactions(transactionsResponse);
+        }
 
-        setCustomers(usersResponse.filter((user: any) => user.role === 'kunde'));
-        setUsers(usersResponse);
-        setTransactions(transactionsResponse);
     } catch (error) {
         console.error("Authentifizierung oder Datenabruf fehlgeschlagen, logge aus:", error);
         handleLogout();
@@ -2543,24 +2650,35 @@ const handleConfirmDeleteDocument = async () => {
   };
 
   // --- Data Scoping for Mitarbeiter ---
+ // In frontend/index.tsx in der App-Komponente
+
+  // --- Data Scoping for Mitarbeiter ---
   const { visibleCustomers, visibleTransactions } = useMemo(() => {
-    // KORREKTUR: 'mitarbeiter' wird jetzt genauso wie 'admin' behandelt.
-    // Sie sehen alle Kunden und Transaktionen.
-    if (!loggedInUser || loggedInUser.role === 'admin' || loggedInUser.role === 'mitarbeiter') {
+    // Admins sehen immer alles
+    if (loggedInUser?.role === 'admin') {
       return { visibleCustomers: customers, visibleTransactions: transactions };
     }
 
-    // Kunden sehen nur ihre eigenen Daten (Logik für die Zukunft)
-    if (loggedInUser.role === 'kunde') {
-      // TODO: Hier später filtern, sodass Kunden nur ihre eigenen Transaktionen sehen
-      return { visibleCustomers: [], visibleTransactions: transactions.filter(tx => tx.user_id === loggedInUser.id) };
+    // Mitarbeiter sehen nur die von ihnen gebuchten Transaktionen
+    // und nur die Kunden, die in diesen Transaktionen vorkommen.
+    if (loggedInUser?.role === 'mitarbeiter') {
+      const staffTransactions = transactions.filter(tx => tx.booked_by_id === loggedInUser.id);
+      const customerIdsInPortfolio = new Set(staffTransactions.map(tx => tx.user_id));
+      const portfolioCustomers = customers.filter(c => customerIdsInPortfolio.has(c.id));
+
+      return { visibleCustomers: portfolioCustomers, visibleTransactions: staffTransactions };
+    }
+
+    // Kunden sehen nur ihre eigenen Daten
+    if (loggedInUser?.role === 'kunde') {
+        // Die API liefert bereits nur die eigenen Transaktionen
+        return { visibleCustomers: customers, visibleTransactions: transactions };
     }
 
     // Fallback
     return { visibleCustomers: [], visibleTransactions: [] };
 
   }, [loggedInUser, customers, transactions]);
-
   if (isLoading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Lade App...</div>;
   }
@@ -2578,14 +2696,21 @@ const handleConfirmDeleteDocument = async () => {
     );
   }
 
+  if (loggedInUser.role === 'kunde') {
+      const customer = customers.find(c => c.id === loggedInUser.id);
+      // NEU: State, um zwischen den Kundenseiten zu wechseln
 
-  // --- Role-based rendering ---
-  if (loggedInUser.role === 'customer') {
-      const customer = customers.find(c => c.id === loggedInUser.customerId);
       if (customer) {
         return (
              <div className={`app-container ${isSidebarOpen ? "sidebar-open" : ""}`}>
-                <CustomerSidebar user={loggedInUser} onLogout={() => setLoggedInUser(null)} setSidebarOpen={setIsSidebarOpen} />
+                <CustomerSidebar
+                    user={loggedInUser}
+                    onLogout={handleLogout}
+                    setSidebarOpen={setIsSidebarOpen}
+                    activePage={customerPage} // Wichtig: State übergeben
+                    setPage={setCustomerPage}  // Wichtig: Funktion zum Ändern übergeben
+                />
+
                 <main className="main-content">
                     {isMobileView && (
                         <header className="mobile-header">
@@ -2598,33 +2723,46 @@ const handleConfirmDeleteDocument = async () => {
                             </div>
                         </header>
                     )}
-                    <CustomerDetailPage 
-                        customer={customer} 
-                        transactions={transactions.filter(t => t.customerId === customer.id)} 
-                        setView={setView} 
-                        handleLevelUp={handleLevelUp}
-                        onUpdateCustomer={onUpdateCustomer}
-                        onToggleVipStatus={onToggleVipStatus}
-                        onToggleExpertStatus={onToggleExpertStatus }
-                        currentUser={loggedInUser}
-                        users={users}
-//                         documents={documents.filter(d => d.customerId === customer.id)}
-                        onUploadDocuments={onUploadDocuments}
-                        onDeleteDocument={onDeleteDocument}
-                    />
+
+                    {/* NEU: Hier wird je nach State die richtige Seite angezeigt */}
+                    {customerPage === 'overview' ? (
+                        <CustomerDetailPage
+                            customer={customer}
+                            transactions={transactions}
+                            setView={setView}
+                            handleLevelUp={handleLevelUp}
+                            onSave={handleSaveCustomerDetails}
+                            onToggleVipStatus={onToggleVipStatus}
+                            onToggleExpertStatus={onToggleExpertStatus}
+                            currentUser={loggedInUser}
+                            users={users}
+                            onUploadDocuments={(files) => onUploadDocuments(files, String(customer.id))}
+                            onDeleteDocument={setDeletingDocument}
+                            fetchAppData={fetchAppData}
+                            authToken={authToken}
+                            onDeleteUserClick={setDeleteUserModal}
+                            setDogFormModal={setDogFormModal}
+                            setDeletingDog={setDeletingDog}
+                        />
+                    ) : (
+                        <CustomerTransactionsPage transactions={transactions} />
+                    )}
                 </main>
                 {isMobileView && isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
              </div>
         );
       }
-      return <div>Kundenprofil nicht gefunden.</div>;
+      return <div>Kundenprofil konnte nicht geladen werden. Bitte neu anmelden.</div>;
   }
+
   
   const renderContent = () => {
     const kpiClickHandler = (type: string, color: string) => handleKpiClick(type, color, { customers: visibleCustomers, transactions: visibleTransactions });
 
     if (view.page === 'customers' && view.subPage === 'detail' && view.customerId) {
-        const customer = visibleCustomers.find(c => c.id === parseInt(view.customerId));
+        const customer = (directAccessedCustomer && String(directAccessedCustomer.id) === view.customerId)
+            ? directAccessedCustomer
+            : visibleCustomers.find(c => c.id === parseInt(view.customerId));
         if (customer) return <CustomerDetailPage
             customer={customer}
             transactions={transactions} // Pass all transactions for progress calculation
@@ -2645,8 +2783,28 @@ const handleConfirmDeleteDocument = async () => {
         />;
     }
     if (view.page === 'customers' && view.subPage === 'transactions' && view.customerId) {
-        const customer = visibleCustomers.find(c => c.id === parseInt(view.customerId));
-        if (customer) return <TransactionManagementPage customer={customer} setView={setView} onConfirmTransaction={handleConfirmTransaction} currentUser={loggedInUser} />;
+        // HIER IST DIE KORREKTUR:
+        // Wir wenden dieselbe Logik an wie bei der Detailseite.
+        // Priorisiere den direkt aufgerufenen Kunden (via QR-Code),
+        // ansonsten suche im normalen Portfolio (`visibleCustomers`).
+        const customer = (directAccessedCustomer && String(directAccessedCustomer.id) === view.customerId)
+            ? directAccessedCustomer
+            : visibleCustomers.find(c => c.id === parseInt(view.customerId));
+
+        if (customer) {
+            return <TransactionManagementPage
+                        customer={customer}
+                        setView={setView}
+                        onConfirmTransaction={handleConfirmTransaction}
+                        currentUser={loggedInUser}
+                    />;
+        }
+
+        // Fallback, falls der Kunde aus irgendeinem Grund nicht gefunden wird.
+        // Das verhindert, dass die Seite "abstürzt".
+        console.error("Fehler: Kunde für die Transaktionsverwaltung konnte nicht gefunden werden.");
+        setView({ page: 'dashboard' }); // Gehe sicherheitshalber zum Dashboard zurück.
+        return null;
     }
 
     switch (view.page) {
@@ -2664,7 +2822,7 @@ const handleConfirmDeleteDocument = async () => {
         default:
             return <DashboardPage customers={visibleCustomers} transactions={visibleTransactions} currentUser={loggedInUser} onKpiClick={kpiClickHandler} setView={setView} />;
     }
-};
+  };
 
   return (
     <div className={`app-container ${isSidebarOpen ? "sidebar-open" : ""}`}>
@@ -2698,8 +2856,10 @@ const handleConfirmDeleteDocument = async () => {
   );
 };
 
+// Am Ende der Datei index.tsx
+
 const container = document.getElementById('root');
 if (container) {
   const root = createRoot(container);
   root.render(<App />);
-}
+} // <-- DIESE KLAMMER HINZUFÜGEN
