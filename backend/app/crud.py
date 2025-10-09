@@ -265,9 +265,6 @@ def get_transactions(db: Session, skip: int = 0, limit: int = 100):
     """Holt eine Liste von Transaktionen, die neuesten zuerst."""
     return db.query(models.Transaction).order_by(models.Transaction.date.desc()).offset(skip).limit(limit).all()
 
-# In backend/app/crud.py, unter der get_transactions Funktion einfügen
-
-# In backend/app/crud.py
 
 def get_transactions_for_user(db: Session, user_id: int, for_staff: bool = False):
     """
@@ -295,47 +292,26 @@ def create_achievement(db: Session, user_id: int, requirement_id: str, transacti
 
 # --- USER LEVEL ---
 def update_user_level(db: Session, user_id: int, new_level_id: int):
-    print(f"\n--- Starte Level-Up für User ID: {user_id} zu neuem Level: {new_level_id} ---")
-
     db_user = get_user(db, user_id=user_id)
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    level_to_complete = db_user.level_id
-    print(f"[DEBUG] Aktueller Level des Users (level_to_complete): {level_to_complete}")
-
-    requirements_to_consume = LEVEL_REQUIREMENTS.get(level_to_complete, [])
-    print(f"[DEBUG] Benötigte Lektionen für dieses Level: {requirements_to_consume}")
-
-    if not requirements_to_consume:
-        print("[DEBUG] Keine Lektionen für dieses Level gefunden. Aktualisiere nur die level_id.")
+    dog_license_prereq_ids = {req['id'] for req in DOGLICENSE_PREREQS}
 
     unconsumed_achievements = db.query(models.Achievement).filter_by(
         user_id=user_id, is_consumed=False
-    ).order_by(models.Achievement.date_achieved).all()
-    print(f"[DEBUG] {len(unconsumed_achievements)} unverbrauchte Lektionen für diesen User gefunden.")
+    ).all()
 
-    for req in requirements_to_consume:
-        print(f"[DEBUG] Prüfe Anforderung: '{req['id']}', benötigt: {req['required']}")
-        consumed_count = 0
-        # Diese Schleife durchläuft eine Kopie, damit wir das Original verändern können
-        for ach in list(unconsumed_achievements):
-            if ach.requirement_id == req["id"] and not ach.is_consumed:
-                print(f"   -> VERBRAUCHE Lektion ID: {ach.id} für Anforderung '{req['id']}'")
-                ach.is_consumed = True
-                db.add(ach)
-                consumed_count += 1
-                unconsumed_achievements.remove(ach) # Entferne, damit es nicht doppelt gezählt wird
-                if consumed_count >= req["required"]:
-                    break
-        print(f"[DEBUG] {consumed_count} von {req['required']} Lektionen für '{req['id']}' verbraucht.")
+    for ach in unconsumed_achievements:
+        # Zusatzveranstaltungen werden NICHT verbraucht, alles andere schon.
+        if ach.requirement_id not in dog_license_prereq_ids:
+            ach.is_consumed = True
+            db.add(ach)
 
     db_user.level_id = new_level_id
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-
-    print(f"--- Level-Up für User ID: {user_id} erfolgreich abgeschlossen ---")
     return db_user
 
 def get_dog(db: Session, dog_id: int):

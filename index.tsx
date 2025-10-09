@@ -140,8 +140,7 @@ const getAvatarColorClass = (name: string) => {
 
 // --- MOCK DATEN ---
 const VIP_LEVEL: Level = { id: 99, name: 'VIP-Kunde', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/VIP.png' };
-const EXPERT_LEVEL: Level = { id: 100, name: 'Experte', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/Experten_Badge.png' };
-
+const EXPERT_LEVEL: Level = { id: 100, name: 'Experte', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/09/DZKB-Experte.png' };
 
 const LEVELS: Level[] = [
   { id: 1, name: 'Welpen', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/L1.png' },
@@ -2270,7 +2269,13 @@ const App: FC = () => {
     }
   }, [loggedInUser]); // Abhängig vom Login-Status
 
-// In frontend/index.tsx
+  const handleSetView = (newView: View) => {
+    if (view.subPage === 'detail' && newView.page !== 'customers') {
+      setDirectAccessedCustomer(null);
+      window.history.pushState({}, '', '/');
+    }
+    setView(newView);
+  };
 
 const fetchAppData = async () => {
     if (!authToken) {
@@ -2322,11 +2327,13 @@ useEffect(() => {
   };
 
   // Funktion zum Ausloggen
-  const handleLogout = () => {
+const handleLogout = () => {
     localStorage.removeItem('authToken');
     setAuthToken(null);
     setLoggedInUser(null);
-  };
+    setDirectAccessedCustomer(null); // Zustand zurücksetzen
+    window.history.pushState({}, '', '/'); // URL zurücksetzen
+};
 
   const handleUpdateStatus = async (userId: string, statusType: 'vip' | 'expert', value: boolean) => {
     if (!authToken) return;
@@ -2729,7 +2736,7 @@ const handleConfirmDeleteDocument = async () => {
                         <CustomerDetailPage
                             customer={customer}
                             transactions={transactions}
-                            setView={setView}
+                            setView={handleSetView}
                             handleLevelUp={handleLevelUp}
                             onSave={handleSaveCustomerDetails}
                             onToggleVipStatus={onToggleVipStatus}
@@ -2766,7 +2773,7 @@ const handleConfirmDeleteDocument = async () => {
         if (customer) return <CustomerDetailPage
             customer={customer}
             transactions={transactions} // Pass all transactions for progress calculation
-            setView={setView}
+            setView={handleSetView}
             handleLevelUp={handleLevelUp}
             onSave={handleSaveCustomerDetails}
             fetchAppData={fetchAppData}
@@ -2794,7 +2801,7 @@ const handleConfirmDeleteDocument = async () => {
         if (customer) {
             return <TransactionManagementPage
                         customer={customer}
-                        setView={setView}
+                        setView={handleSetView}
                         onConfirmTransaction={handleConfirmTransaction}
                         currentUser={loggedInUser}
                     />;
@@ -2808,7 +2815,7 @@ const handleConfirmDeleteDocument = async () => {
     }
 
     switch (view.page) {
-        case 'customers': return <KundenPage customers={visibleCustomers} transactions={visibleTransactions} setView={setView} onKpiClick={kpiClickHandler} onAddCustomerClick={() => setAddCustomerModalOpen(true)} />;
+        case 'customers': return <KundenPage customers={visibleCustomers} transactions={visibleTransactions} setView={handleSetView} onKpiClick={kpiClickHandler} onAddCustomerClick={() => setAddCustomerModalOpen(true)} />;
         case 'reports': return <BerichtePage transactions={visibleTransactions} customers={visibleCustomers} users={users} currentUser={loggedInUser} />;
         case 'users': return loggedInUser.role === 'admin'
             ? <BenutzerPage
@@ -2817,17 +2824,17 @@ const handleConfirmDeleteDocument = async () => {
                 onEditUserClick={(user) => setUserModal({ isOpen: true, user })}
                 onDeleteUserClick={(user) => setDeleteUserModal(user)}
             />
-            : <DashboardPage customers={visibleCustomers} transactions={visibleTransactions} currentUser={loggedInUser} onKpiClick={kpiClickHandler} setView={setView} />;
+            : <DashboardPage customers={visibleCustomers} transactions={visibleTransactions} currentUser={loggedInUser} onKpiClick={kpiClickHandler} setView={handleSetView} />;
         case 'dashboard':
         default:
-            return <DashboardPage customers={visibleCustomers} transactions={visibleTransactions} currentUser={loggedInUser} onKpiClick={kpiClickHandler} setView={setView} />;
+            return <DashboardPage customers={visibleCustomers} transactions={visibleTransactions} currentUser={loggedInUser} onKpiClick={kpiClickHandler} setView={handleSetView} />;
     }
   };
 
   return (
     <div className={`app-container ${isSidebarOpen ? "sidebar-open" : ""}`}>
       {isServerLoading.active && <LoadingSpinner message={isServerLoading.message} />}
-      <Sidebar user={loggedInUser} activePage={view.page} setView={setView} onLogout={() => setLoggedInUser(null)} setSidebarOpen={setIsSidebarOpen} />
+      <Sidebar user={loggedInUser} activePage={view.page} setView={handleSetView} onLogout={() => setLoggedInUser(null)} setSidebarOpen={setIsSidebarOpen} />
       <main className="main-content">
         {isMobileView && (
             <header className="mobile-header">

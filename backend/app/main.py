@@ -279,7 +279,7 @@ def upload_document_for_user(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(auth.get_current_active_user)
 ):
-    if current_user.role not in ['admin', 'mitarbeiter']:
+    if current_user.role not in ['admin', 'mitarbeiter'] and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     file_path = os.path.join(UPLOADS_DIR, upload_file.filename)
@@ -304,12 +304,12 @@ def delete_document_endpoint(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(auth.get_current_active_user)
 ):
-    if current_user.role not in ['admin', 'mitarbeiter']:
-        raise HTTPException(status_code=403, detail="Not authorized")
-
     db_doc = crud.get_document(db, document_id=document_id)
     if not db_doc:
         raise HTTPException(status_code=404, detail="Document not found")
+
+    if current_user.role not in ['admin', 'mitarbeiter'] and current_user.id != db_doc.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
 
     # Physische Datei löschen
     if os.path.exists(db_doc.file_path):

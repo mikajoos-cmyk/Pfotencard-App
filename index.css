@@ -574,7 +574,7 @@ body {
 
 /* --- Confirmation Modal & Info Modal --- */
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 1rem; }
-.modal-content { background: var(--card-background); border-radius: 1rem; padding: 0; width: 90%; max-width: 550px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; overflow: visible;}
+.modal-content { background: var(--card-background); border-radius: 1rem; padding: 0; width: 90%; max-width: 550px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; overflow: hidden; max-height: 90vh;}
 .info-modal, .add-customer-modal { max-height: 80vh; max-width: 600px; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem; flex-shrink: 0; }
 .modal-header.green { background-color: var(--brand-green); color: white; border-top-left-radius: 1rem; border-top-right-radius: 1rem; }
