@@ -2269,9 +2269,11 @@ const App: FC = () => {
     }
   }, [loggedInUser]); // Abhängig vom Login-Status
 
-  const handleSetView = (newView: View) => {
-    if (view.subPage === 'detail' && newView.page !== 'customers') {
+ const handleSetView = (newView: View) => {
+    // Wenn wir von einer Detailansicht (Kunde oder Transaktion) wegnavigieren...
+    if (view.customerId && newView.customerId !== view.customerId) {
       setDirectAccessedCustomer(null);
+      // Bereinigt die URL in der Adressleiste des Browsers ohne Neuladen.
       window.history.pushState({}, '', '/');
     }
     setView(newView);
@@ -2331,9 +2333,9 @@ const handleLogout = () => {
     localStorage.removeItem('authToken');
     setAuthToken(null);
     setLoggedInUser(null);
-    setDirectAccessedCustomer(null); // Zustand zurücksetzen
-    window.history.pushState({}, '', '/'); // URL zurücksetzen
-};
+    setDirectAccessedCustomer(null);
+    window.history.pushState({}, '', '/');
+  };
 
   const handleUpdateStatus = async (userId: string, statusType: 'vip' | 'expert', value: boolean) => {
     if (!authToken) return;
