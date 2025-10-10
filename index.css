@@ -579,79 +579,120 @@ body {
 .document-viewer-modal img.preview { max-width: 100%; max-height: 60vh; border-radius: 8px; margin-bottom: 1rem; }
 
 
-/* --- Confirmation Modal & Info Modal --- */
+/* === MODAL OVERLAY === */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
   padding: 1rem;
+  overscroll-behavior: contain; /* verhindert "Hintergrundscrollen" auf iOS */
 }
 
+/* === MODAL CONTENT === */
 .modal-content {
   background: var(--card-background);
   border-radius: 1rem;
   width: 90%;
   max-width: 550px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  max-height: 100dvh; /* statt 80/90vh */
+
+  /* dynamische Höhe für mobile Browser */
+  max-height: 100dvh;
+  height: auto;
 }
 
 @supports not (height: 100dvh) {
   .modal-content {
-    max-height: calc(100vh - 2rem); /* fallback für ältere Browser */
+    max-height: calc(100vh - 2rem); /* Fallback */
   }
 }
 
+/* === VARIANTEN === */
+.add-customer-modal,
+.info-modal {
+  max-width: 600px;
+  max-height: 100dvh;
+}
+
+/* === MODAL HEADER === */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.75rem;
+  flex-shrink: 0;
+  font-weight: 600;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+}
+.modal-header h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+.modal-header.green { background-color: var(--brand-green); color: #fff; }
+.modal-header.orange { background-color: var(--brand-orange); color: #fff; }
+.modal-header.blue { background-color: var(--brand-blue); color: #fff; }
+.modal-header.purple { background-color: var(--brand-purple); color: #fff; }
+.modal-header.red { background-color: var(--brand-red); color: #fff; }
+
+.modal-close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* === MODAL BODY === */
 .modal-body {
+  flex: 1 1 auto;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  flex-grow: 1;
   padding: 1.5rem 2rem;
+  background-color: var(--card-background);
+}
+.modal-body h4 {
+  margin-top: 0;
+  font-size: 1rem;
+  color: var(--text-primary);
 }
 
-.add-customer-modal {
-  max-height: 100dvh; /* überschreibt 80vh */
+/* === MODAL FOOTER === */
+.modal-footer {
+  flex-shrink: 0;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  padding: 1rem 1.75rem;
+  background-color: #f9fafb;
+  border-top: 1px solid var(--border-color);
+  position: sticky;
+  bottom: 0; /* bleibt sichtbar beim Scrollen */
 }
 
-
-.info-modal, .add-customer-modal { 
-    max-width: 100dvh; 
+/* === TOUCH & MOBILE OPTIMIERUNG === */
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    max-width: 95%;
+    border-radius: 0.75rem;
+  }
+  .modal-body {
+    padding: 1.25rem;
+  }
+  .modal-footer {
+    justify-content: center;
+  }
 }
 
-.modal-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    padding: 1.5rem 2rem; 
-    flex-shrink: 0; 
-}
-
-.modal-header.green { background-color: var(--brand-green); color: white; border-top-left-radius: 1rem; border-top-right-radius: 1rem; }
-.modal-header.orange { background-color: var(--brand-orange); color: white; }
-.modal-header.blue { background-color: var(--brand-blue); color: white; }
-.modal-header.purple { background-color: var(--brand-purple); color: white; }
-.modal-header.red { background-color: var(--brand-red); color: white; }
-.modal-header h2 { font-size: 1.5rem; }
-.modal-close-button { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary); }
-.modal-header .modal-close-button { color: rgba(255, 255, 255, 0.8); }
-
-.modal-footer { 
-    display: flex; 
-    gap: 1rem; 
-    justify-content: flex-end; 
-    flex-shrink: 0; 
-    padding: 1.5rem 2rem; 
-    background-color: #f9fafb; 
-    border-top: 1px solid var(--border-color); 
-    flex-wrap: wrap; 
-}
 .modal-footer .button { min-width: 120px; }
 .modal-footer a.button { text-decoration: none; }
 
