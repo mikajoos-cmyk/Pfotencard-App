@@ -1,3 +1,9 @@
+@supports (height: 100dvh) {
+  .app-container {
+    height: 100dvh;
+  }
+}
+
 :root {
   /* Brand Colors from Design */
   --brand-green: #22C55E;
@@ -46,9 +52,11 @@
 }
 
 html, body, #root {
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
+
 
 body {
   font-family: 'Poppins', sans-serif;
@@ -85,7 +93,7 @@ body {
 .form-group input:focus, .form-input:focus { outline: none; border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
 
 /* --- Main App Layout --- */
-.app-container { display: flex; height: 100vh; width: 100vw; }
+.app-container { display: flex; min-height: 100dvh; width: 100vw; }
 
 /* --- Sidebar --- */
 .sidebar { width: 260px; background-color: var(--sidebar-bg); display: flex; flex-direction: column; padding: 1.5rem 1rem; flex-shrink: 0; transition: width 0.3s ease; }
