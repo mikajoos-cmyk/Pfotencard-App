@@ -2146,9 +2146,8 @@ const BenutzerPage: FC<{
                 </div>
                 // in der Komponente "KundenPage"
 <div className="header-actions">
-    {currentUser.role === 'admin' && (
-        <button className="button button-primary" onClick={onAddCustomerClick}>+ Neuer Kunde</button>
-    )}
+<button className="button button-primary" onClick={onAddCustomerClick}>+ Neuer Kunde</button>
+
 </div>
             </header>
             <div className="content-box user-list">
