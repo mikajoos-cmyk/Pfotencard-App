@@ -589,7 +589,7 @@ body {
   align-items: center;
   z-index: 1000;
   padding: 1rem;
-  overscroll-behavior: contain; /* verhindert "Hintergrundscrollen" auf iOS */
+  overscroll-behavior: contain;
 }
 
 /* === MODAL CONTENT === */
@@ -602,23 +602,13 @@ body {
   flex-direction: column;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-
-  /* dynamische Höhe für mobile Browser */
-  max-height: 90vh;
-  height: auto;
+  max-height: 90dvh; /* Wichtig: Limitiert die Gesamthöhe des Pop-ups */
 }
 
-@supports not (height: 100dvh) {
-  .modal-content {
-    max-height: calc(100vh - 2rem); /* Fallback */
-  }
-}
-
-/* === VARIANTEN === */
+/* === VARIANTEN (OHNE max-height) === */
 .add-customer-modal,
 .info-modal {
-  max-width: 600px;
-  max-height: 100dvh;
+  max-width: 600px; /* Nur die Breite wird hier angepasst */
 }
 
 /* === MODAL HEADER === */
@@ -627,10 +617,8 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.75rem;
-  flex-shrink: 0;
+  flex-shrink: 0; /* Wichtig: Verhindert, dass der Header schrumpft */
   font-weight: 600;
-  border-top-left-radius: 1rem;
-  border-top-right-radius: 1rem;
 }
 .modal-header h2 {
   font-size: 1.25rem;
@@ -650,14 +638,13 @@ body {
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* === MODAL BODY === */
+/* === MODAL BODY (JETZT SCROLLBAR) === */
 .modal-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
+  flex-grow: 1; /* Nimmt den verfügbaren Platz ein */
+  overflow-y: auto; /* Erzeugt die Scrollleiste bei Bedarf */
   -webkit-overflow-scrolling: touch;
   padding: 1.5rem 2rem;
   background-color: var(--card-background);
-  flex-grow: 1;
 }
 .modal-body h4 {
   margin-top: 0;
@@ -667,7 +654,7 @@ body {
 
 /* === MODAL FOOTER === */
 .modal-footer {
-  flex-shrink: 0;
+  flex-shrink: 0; /* Wichtig: Verhindert, dass der Footer schrumpft */
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
@@ -675,8 +662,6 @@ body {
   padding: 1rem 1.75rem;
   background-color: #f9fafb;
   border-top: 1px solid var(--border-color);
-  position: sticky;
-  bottom: 0; /* bleibt sichtbar beim Scrollen */
 }
 
 /* === TOUCH & MOBILE OPTIMIERUNG === */
