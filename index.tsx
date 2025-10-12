@@ -2829,19 +2829,22 @@ const handleConfirmDeleteDocument = async () => {
                 currentUser={loggedInUser} /* <-- DIESE ZEILE WURDE HINZUGEFÜGT */
             />;
         case 'reports': return <BerichtePage transactions={visibleTransactions} customers={visibleCustomers} users={users} currentUser={loggedInUser} />;
-        case 'users': return loggedInUser.role === 'admin'
+case 'users':
+  return loggedInUser.role === 'admin'
     ? <BenutzerPage
         users={users}
         onAddUserClick={() => setUserModal({ isOpen: true, user: null })}
         onEditUserClick={(user) => setUserModal({ isOpen: true, user })}
         onDeleteUserClick={(user) => setDeleteUserModal(user)}
-        currentUser={loggedInUser} /* <-- DIESE ZEILE WURDE HINZUGEFÜGT */
-    />
-    : <DashboardPage customers={visibleCustomers} transactions={visibleTransactions} currentUser={loggedInUser} onKpiClick={kpiClickHandler} setView={handleSetView} />;
-        case 'dashboard':
-        default:
-            return <DashboardPage customers={visibleCustomers} transactions={visibleTransactions} currentUser={loggedInUser} onKpiClick={kpiClickHandler} setView={handleSetView} />;
-    }
+        currentUser={loggedInUser} // <-- DIESE ZEILE IST ENTSCHEIDEND
+      />
+    : <DashboardPage
+        customers={visibleCustomers}
+        transactions={visibleTransactions}
+        currentUser={loggedInUser}
+        onKpiClick={kpiClickHandler}
+        setView={handleSetView}
+      />;
   };
 
   return (
