@@ -2005,10 +2005,7 @@ const UserFormModal: FC<{
                             <label>Name*</label>
                             <input type="text" value={name} onChange={e => setName(e.target.value)} required />
                         </div>
-                        <div className="form-group">
-                            <label>E-Mail*</label>
-                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-                        </div>
+                        <div className="form-group"><label>E-Mail*</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} required /></div>
                         <div className="form-group">
                             <label>{isEditing ? 'Neues Passwort (optional)' : 'Passwort*'}</label>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -2146,9 +2143,12 @@ const BenutzerPage: FC<{
                     <h1>Benutzerverwaltung</h1>
                     <p>Verwalten Sie alle Systembenutzer an einem Ort</p>
                 </div>
-                <div className="header-actions">
-                    <button className="button button-primary" onClick={onAddUserClick}>+ Neuer Benutzer</button>
-                </div>
+                // in der Komponente "KundenPage"
+<div className="header-actions">
+    {currentUser.role === 'admin' && (
+        <button className="button button-primary" onClick={onAddCustomerClick}>+ Neuer Kunde</button>
+    )}
+</div>
             </header>
             <div className="content-box user-list">
                 <h2>Systembenutzer ({systemUsers.length})</h2>
