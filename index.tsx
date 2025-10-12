@@ -2133,8 +2133,7 @@ const BenutzerPage: FC<{
     onAddUserClick: () => void;
     onEditUserClick: (user: User) => void;
     onDeleteUserClick: (user: User) => void;
-    currentUser: any; /* <-- DIESE ZEILE WURDE HINZUGEFÜGT */
-}> = ({ users, onAddUserClick, onEditUserClick, onDeleteUserClick, currentUser }) => {
+}> = ({ users, onAddUserClick, onEditUserClick, onDeleteUserClick }) => {
     
     const systemUsers = users.filter(u => u.role !== 'kunde');
 
@@ -2767,7 +2766,9 @@ const handleConfirmDeleteDocument = async () => {
   }
 
   
-  const renderContent = () => {
+  // Pfad: index.tsx
+
+const renderContent = () => {
     const kpiClickHandler = (type: string, color: string) => handleKpiClick(type, color, { customers: visibleCustomers, transactions: visibleTransactions });
 
     if (view.page === 'customers' && view.subPage === 'detail' && view.customerId) {
@@ -2776,7 +2777,7 @@ const handleConfirmDeleteDocument = async () => {
             : visibleCustomers.find(c => c.id === parseInt(view.customerId));
         if (customer) return <CustomerDetailPage
             customer={customer}
-            transactions={transactions} // Pass all transactions for progress calculation
+            transactions={transactions}
             setView={handleSetView}
             handleLevelUp={handleLevelUp}
             onSave={handleSaveCustomerDetails}
@@ -2794,10 +2795,6 @@ const handleConfirmDeleteDocument = async () => {
         />;
     }
     if (view.page === 'customers' && view.subPage === 'transactions' && view.customerId) {
-        // HIER IST DIE KORREKTUR:
-        // Wir wenden dieselbe Logik an wie bei der Detailseite.
-        // Priorisiere den direkt aufgerufenen Kunden (via QR-Code),
-        // ansonsten suche im normalen Portfolio (`visibleCustomers`).
         const customer = (directAccessedCustomer && String(directAccessedCustomer.id) === view.customerId)
             ? directAccessedCustomer
             : visibleCustomers.find(c => c.id === parseInt(view.customerId));
@@ -2811,42 +2808,54 @@ const handleConfirmDeleteDocument = async () => {
                     />;
         }
 
-        // Fallback, falls der Kunde aus irgendeinem Grund nicht gefunden wird.
-        // Das verhindert, dass die Seite "abstürzt".
         console.error("Fehler: Kunde für die Transaktionsverwaltung konnte nicht gefunden werden.");
-        setView({ page: 'dashboard' }); // Gehe sicherheitshalber zum Dashboard zurück.
+        setView({ page: 'dashboard' });
         return null;
     }
 
     switch (view.page) {
-        case 'customers': 
-    return <KundenPage 
-                customers={visibleCustomers} 
-                transactions={visibleTransactions} 
-                setView={handleSetView} 
-                onKpiClick={kpiClickHandler} 
+        case 'customers':
+            return <KundenPage
+                customers={visibleCustomers}
+                transactions={visibleTransactions}
+                setView={handleSetView}
+                onKpiClick={kpiClickHandler}
                 onAddCustomerClick={() => setAddCustomerModalOpen(true)}
-                currentUser={loggedInUser} /* <-- DIESE ZEILE WURDE HINZUGEFÜGT */
+                currentUser={loggedInUser}
             />;
-        case 'reports': return <BerichtePage transactions={visibleTransactions} customers={visibleCustomers} users={users} currentUser={loggedInUser} />;
-     // Pfad: index.tsx, in der Funktion renderContent
-
-case 'users':
-  return loggedInUser.role === 'admin'
-    ? <BenutzerPage
-        users={users}
-        onAddUserClick={() => setUserModal({ isOpen: true, user: null })}
-        onEditUserClick={(user) => setUserModal({ isOpen: true, user })}
-        onDeleteUserClick={(user) => setDeleteUserModal(user)}
-        currentUser={loggedInUser} // <-- DIESE ZEILE IST ENTSCHEIDEND
-      />
-    : <DashboardPage
-        customers={visibleCustomers}
-        transactions={visibleTransactions}
-        currentUser={loggedInUser}
-        onKpiClick={kpiClickHandler}
-        setView={handleSetView}
-      />;}
+        case 'reports':
+            return <BerichtePage
+                transactions={visibleTransactions}
+                customers={visibleCustomers}
+                users={users}
+                currentUser={loggedInUser}
+            />;
+        case 'users':
+            return loggedInUser.role === 'admin'
+            ? <BenutzerPage
+                users={users}
+                onAddUserClick={() => setUserModal({ isOpen: true, user: null })}
+                onEditUserClick={(user) => setUserModal({ isOpen: true, user })}
+                onDeleteUserClick={(user) => setDeleteUserModal(user)}
+                currentUser={loggedInUser}
+            />
+            : <DashboardPage
+                customers={visibleCustomers}
+                transactions={visibleTransactions}
+                currentUser={loggedInUser}
+                onKpiClick={kpiClickHandler}
+                setView={handleSetView}
+            />;
+        case 'dashboard':
+        default:
+            return <DashboardPage
+                customers={visibleCustomers}
+                transactions={visibleTransactions}
+                currentUser={loggedInUser}
+                onKpiClick={kpiClickHandler}
+                setView={handleSetView}
+            />;
+    }
   };
 
   return (
