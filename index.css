@@ -678,26 +678,13 @@ body {
   }
 }
 
-/* ============================================= */
-/* === FINAL MODAL SCROLL FIX (PRIORITIZED) === */
-/* ============================================= */
-
-/* Erzwingt, dass das Pop-up nie den sichtbaren Bereich verlässt */
-.modal-content {
-  max-height: 90vh !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* Erzwingt, dass Header und Footer immer sichtbar bleiben */
-.modal-header, .modal-footer {
-  flex-shrink: 0 !important;
-}
-
-/* Erzwingt, dass der mittlere Teil den Restplatz füllt und scrollbar wird */
-.modal-body {
-  flex-grow: 1 !important;
-  overflow-y: auto !important;
+.modal-content form {
+  display: flex;
+  flex-direction: column;
+  /* Das Formular selbst soll den verfügbaren Platz ausfüllen */
+  flex-grow: 1;
+  /* Verhindert Flexbox-Layout-Probleme bei sehr kleinen Höhen */
+  min-height: 0;
 }
 
 .modal-footer .button { min-width: 120px; }
