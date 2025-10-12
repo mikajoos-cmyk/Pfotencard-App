@@ -601,7 +601,6 @@ body {
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
   max-height: 90dvh; /* Wichtig: Limitiert die Gesamthöhe des Pop-ups */
 }
 
