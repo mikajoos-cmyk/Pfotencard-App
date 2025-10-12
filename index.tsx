@@ -837,8 +837,9 @@ const KundenPage: FC<{
     transactions: Transaction[], 
     setView: (view: View) => void, 
     onKpiClick: (type: string, color: string) => void,
-    onAddCustomerClick: () => void 
-}> = ({ customers, transactions, setView, onKpiClick, onAddCustomerClick }) => {
+    onAddCustomerClick: () => void,
+    currentUser: any; /* <-- DIESE ZEILE WURDE HINZUGEFÜGT */
+}> = ({ customers, transactions, setView, onKpiClick, onAddCustomerClick, currentUser }) => {
     const [filterLetter, setFilterLetter] = useState('Alle');
     
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -2817,7 +2818,15 @@ const handleConfirmDeleteDocument = async () => {
     }
 
     switch (view.page) {
-        case 'customers': return <KundenPage customers={visibleCustomers} transactions={visibleTransactions} setView={handleSetView} onKpiClick={kpiClickHandler} onAddCustomerClick={() => setAddCustomerModalOpen(true)} />;
+        case 'customers': 
+    return <KundenPage 
+                customers={visibleCustomers} 
+                transactions={visibleTransactions} 
+                setView={handleSetView} 
+                onKpiClick={kpiClickHandler} 
+                onAddCustomerClick={() => setAddCustomerModalOpen(true)}
+                currentUser={loggedInUser} /* <-- DIESE ZEILE WURDE HINZUGEFÜGT */
+            />;
         case 'reports': return <BerichtePage transactions={visibleTransactions} customers={visibleCustomers} users={users} currentUser={loggedInUser} />;
         case 'users': return loggedInUser.role === 'admin'
             ? <BenutzerPage
