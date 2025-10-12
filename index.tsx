@@ -866,7 +866,6 @@ const KundenPage: FC<{
                     <h1>Kundenverwaltung</h1>
                     <p>Verwalten Sie alle Ihre Kunden an einem Ort</p>
                 </div>
-                // in der Komponente "KundenPage"
 <div className="header-actions">
     {currentUser.role === 'admin' && (
         <button className="button button-primary" onClick={onAddCustomerClick}>+ Neuer Kunde</button>
