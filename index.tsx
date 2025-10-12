@@ -2147,7 +2147,6 @@ const BenutzerPage: FC<{
                     <h1>Benutzerverwaltung</h1>
                     <p>Verwalten Sie alle Systembenutzer an einem Ort</p>
                 </div>
-                // in der Komponente "KundenPage"
 <div className="header-actions">
 <button className="button button-primary" onClick={onAddUserClick}>+ Neuer Benutzer</button>
 
