@@ -2133,7 +2133,8 @@ const BenutzerPage: FC<{
     onAddUserClick: () => void;
     onEditUserClick: (user: User) => void;
     onDeleteUserClick: (user: User) => void;
-}> = ({ users, onAddUserClick, onEditUserClick, onDeleteUserClick }) => {
+    currentUser: any; /* <-- DIESE ZEILE WURDE HINZUGEFÜGT */
+}> = ({ users, onAddUserClick, onEditUserClick, onDeleteUserClick, currentUser }) => {
     
     const systemUsers = users.filter(u => u.role !== 'kunde');
 
@@ -2829,13 +2830,14 @@ const handleConfirmDeleteDocument = async () => {
             />;
         case 'reports': return <BerichtePage transactions={visibleTransactions} customers={visibleCustomers} users={users} currentUser={loggedInUser} />;
         case 'users': return loggedInUser.role === 'admin'
-            ? <BenutzerPage
-                users={users}
-                onAddUserClick={() => setUserModal({ isOpen: true, user: null })}
-                onEditUserClick={(user) => setUserModal({ isOpen: true, user })}
-                onDeleteUserClick={(user) => setDeleteUserModal(user)}
-            />
-            : <DashboardPage customers={visibleCustomers} transactions={visibleTransactions} currentUser={loggedInUser} onKpiClick={kpiClickHandler} setView={handleSetView} />;
+    ? <BenutzerPage
+        users={users}
+        onAddUserClick={() => setUserModal({ isOpen: true, user: null })}
+        onEditUserClick={(user) => setUserModal({ isOpen: true, user })}
+        onDeleteUserClick={(user) => setDeleteUserModal(user)}
+        currentUser={loggedInUser} /* <-- DIESE ZEILE WURDE HINZUGEFÜGT */
+    />
+    : <DashboardPage customers={visibleCustomers} transactions={visibleTransactions} currentUser={loggedInUser} onKpiClick={kpiClickHandler} setView={handleSetView} />;
         case 'dashboard':
         default:
             return <DashboardPage customers={visibleCustomers} transactions={visibleTransactions} currentUser={loggedInUser} onKpiClick={kpiClickHandler} setView={handleSetView} />;
