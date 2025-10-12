@@ -608,7 +608,7 @@ body {
 /* === VARIANTEN (OHNE max-height) === */
 .add-customer-modal,
 .info-modal {
-  max-width: 600px; /* Nur die Breite wird hier angepasst */
+  max-width: 600px; /* Hier wird nur noch die Breite angepasst */
 }
 
 /* === MODAL HEADER === */
@@ -677,6 +677,28 @@ body {
   .modal-footer {
     justify-content: center;
   }
+}
+
+/* ============================================= */
+/* === FINAL MODAL SCROLL FIX (PRIORITIZED) === */
+/* ============================================= */
+
+/* Erzwingt, dass das Pop-up nie den sichtbaren Bereich verlässt */
+.modal-content {
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Erzwingt, dass Header und Footer immer sichtbar bleiben */
+.modal-header, .modal-footer {
+  flex-shrink: 0 !important;
+}
+
+/* Erzwingt, dass der mittlere Teil den Restplatz füllt und scrollbar wird */
+.modal-body {
+  flex-grow: 1 !important;
+  overflow-y: auto !important;
 }
 
 .modal-footer .button { min-width: 120px; }
