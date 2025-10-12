@@ -2829,6 +2829,8 @@ const handleConfirmDeleteDocument = async () => {
                 currentUser={loggedInUser} /* <-- DIESE ZEILE WURDE HINZUGEFÜGT */
             />;
         case 'reports': return <BerichtePage transactions={visibleTransactions} customers={visibleCustomers} users={users} currentUser={loggedInUser} />;
+     // Pfad: index.tsx, in der Funktion renderContent
+
 case 'users':
   return loggedInUser.role === 'admin'
     ? <BenutzerPage
@@ -2844,7 +2846,7 @@ case 'users':
         currentUser={loggedInUser}
         onKpiClick={kpiClickHandler}
         setView={handleSetView}
-      />;
+      />;}
   };
 
   return (
