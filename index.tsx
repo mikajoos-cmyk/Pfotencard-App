@@ -866,11 +866,11 @@ const KundenPage: FC<{
                     <h1>Kundenverwaltung</h1>
                     <p>Verwalten Sie alle Ihre Kunden an einem Ort</p>
                 </div>
-<div className="header-actions">
+{/* <div className="header-actions">
     {currentUser.role === 'admin' && (
         <button className="button button-primary" onClick={onAddCustomerClick}>+ Neuer Kunde</button>
     )}
-</div>
+</div> */}
             </header>
             <div className="kpi-grid">
                  <KpiCard title="Kunden Gesamt" value={customers.length.toString()} icon="customers" bgIcon="customers" color="green" onClick={() => onKpiClick('allCustomers', 'green')}/>
