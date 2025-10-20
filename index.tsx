@@ -1916,8 +1916,8 @@ const topCustomers = useMemo(() => {
                     <h2>Transaktionen im Zeitraum ({filteredTransactions.length})</h2>
                     <ul className="detailed-transaction-list">
                          {filteredTransactions.length > 0 ? filteredTransactions.map(tx => {
-                            const customer = customers.find(c => c.id === tx.customerId);
-                            const creator = users.find(u => u.id === tx.createdBy);
+                            const customer = customers.find(c => c.id === tx.user_id);
+                            const creator = users.find(u => u.id === tx.booked_by_id);
                             return (
                                 <li key={tx.id}>
                                     <div className={`tx-icon ${tx.amount < 0 ? 'debit' : 'topup'}`}>
@@ -1925,7 +1925,7 @@ const topCustomers = useMemo(() => {
                                     </div>
                                     <div className="tx-details">
                                         <div className="tx-line-1">
-                                            <span className="tx-title">{tx.title}</span>
+                                            <span className="tx-title">{tx.description}</span>
                                             <span className="tx-customer">für {customer?.name}</span>
                                         </div>
                                         <div className="tx-line-2">
