@@ -1755,22 +1755,44 @@ const topCustomers = useMemo(() => {
     };
 
     const handleExportCSV = () => {
+        // 1. Helper-Funktion zum sicheren Formatieren einer CSV-Zelle
+        const escapeCSV = (value: any) => {
+            const stringValue = String(value ?? ''); // Stellt sicher, dass es ein String ist (handhabt null/undefined)
+            
+            // Wenn ein Komma, ein Anführungszeichen oder ein Zeilenumbruch enthalten ist,
+            // muss der gesamte String in Anführungszeichen gesetzt werden.
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                // Alle Anführungszeichen innerhalb des Strings verdoppeln und alles in Anführungszeichen setzen
+                return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+        };
+
         const headers = ["Datum", "Kunde", "Hund", "Titel", "Typ", "Betrag", "Erstellt von"];
+        
+        // 2. Jede Zeile mit der escapeCSV-Funktion erstellen
         const rows = filteredTransactions.map(tx => {
             const customer = customers.find(c => c.id === tx.user_id);
             const creator = users.find(u => u.id === tx.booked_by_id);
-            return [
+            
+            const rowData = [
                 new Date(tx.date).toLocaleString('de-DE'),
                 customer?.name || 'Unbekannt',
                 customer?.dogs[0]?.name || '',
-                tx.title,
+                tx.description,
                 tx.type,
                 tx.amount,
                 creator?.name || 'Unbekannt'
-            ].join(',');
+            ];
+            
+            // Jede Zelle in der Zeile escapen und dann mit Komma verbinden
+            return rowData.map(escapeCSV).join(',');
         });
 
-        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+        // 3. BOM für UTF-8-Kompatibilität in Excel hinzufügen
+        const bom = '\uFEFF';
+        const csvContent = "data:text/csv;charset=utf-8," + bom + [headers.join(','), ...rows].join('\n');
+        
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
