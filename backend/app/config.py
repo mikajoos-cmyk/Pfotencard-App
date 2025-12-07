@@ -7,7 +7,7 @@ class Settings(BaseSettings):
 
     # Sicherheitsschlüssel für JWT. UNBEDINGT ÄNDERN für den Produktivbetrieb!
     # Kann mit `openssl rand -hex 32` generiert werden.
-    SECRET_KEY: str = "18cc570f-a632-4362-8c7e-68016b3502b6"
+    SECRET_KEY: str = "juNEkEYbtD1qVdQMIgJ3XakApSo2NESxeJAcpASQkrnrMRMlgpaO9fMhhDj9XM/JtDN6sTkpabM9G7Z+/PrYyA=="
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
