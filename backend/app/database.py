@@ -2,15 +2,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from .config import settings
 
-# Dies ist der direkteste Weg, um mysql-connector-python
-# zur Verwendung von SSL zu zwingen, ohne komplexe Zertifikate.
-connect_args = {
-    "ssl_disabled": False
-}
+# HINWEIS: Für PostgreSQL/Supabase benötigen wir keine speziellen 'connect_args' 
+# wie "ssl_disabled" mehr. Der Treiber handelt das automatisch.
 
 engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args=connect_args
+    settings.DATABASE_URL
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

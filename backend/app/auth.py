@@ -42,37 +42,36 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-# --- HIER IST DIE FEHLENDE FUNKTION ---
 async def get_current_active_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> schemas.User:
-    """
-    Decodes the JWT token, validates it, and returns the active user from the database.
-    This function is used as a dependency in protected endpoints.
-    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # Decode the token
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub")
+        # Supabase Token dekodieren
+        # audience="authenticated" ist wichtig bei Supabase
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM], options={"verify_aud": False})
+        
+        # Bei Supabase steht die Email im Feld 'email', 'sub' ist die UUID
+        email: str = payload.get("email")
+        
         if email is None:
             raise credentials_exception
         token_data = schemas.TokenData(email=email)
     except JWTError:
         raise credentials_exception
 
-    # Get user from database
+    # Benutzer in deiner SQL-Datenbank suchen
     user = crud.get_user_by_email(db, email=token_data.email)
     if user is None:
+        # Optional: Wenn User in Supabase existiert aber nicht in DB, hier automatisch anlegen?
+        # Für jetzt werfen wir einen Fehler:
         raise credentials_exception
 
-    # Check if user is active
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
 
-    # Return the full user object (which Pydantic will validate against schemas.User)
     return user

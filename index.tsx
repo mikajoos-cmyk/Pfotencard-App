@@ -1,6 +1,12 @@
 import React, { useState, FC, FormEvent, useMemo, useRef, useEffect, ChangeEvent } from 'react';
 import { createRoot } from 'react-dom/client';
+import { createClient } from '@supabase/supabase-js';
 
+// Konfiguration (am besten in .env, aber für hier hardcoded ok)
+const SUPABASE_URL = 'HTTPS://kaucocsucpyresggilkt.SUPABASE.CO';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthdWNvY3N1Y3B5cmVzZ2dpbGt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2NTc0OTQsImV4cCI6MjA3NzIzMzQ5NH0.6sWT-m3IHFpxHdeaO3pRtAdOdshGBKC2gRT3mD4er4s';
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 
 // --- TYPEN & INTERFACES ---
@@ -365,81 +371,96 @@ const AuthScreen: FC<{
     onLoginEnd: () => void;
     onLoginSuccess: (token: string, user: any) => void;
 }> = ({ onLoginStart, onLoginEnd, onLoginSuccess }) => {
-    const [isLogin, setIsLogin] = useState(true);
-    const [email, setEmail] = useState('admin@pfotencard.de');
-    const [password, setPassword] = useState('passwort');
+    const [view, setView] = useState<'login' | 'register' | 'forgot'>('login');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [dogName, setDogName] = useState('');
-    const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
+    const [message, setMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
 
+    // --- LOGIN ---
     const handleLogin = async (e: FormEvent) => {
         e.preventDefault();
-        setError('');
-        setIsLoading(true);
+        setMessage(null);
         onLoginStart();
 
-        const formData = new FormData();
-        formData.append('username', email);
-        formData.append('password', password);
-
         try {
-            const response = await fetch(`${API_BASE_URL}/api/login`, {
-                method: 'POST',
-                body: formData,
+            // 1. Login direkt bei Supabase
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Login fehlgeschlagen');
-            }
+            if (error) throw error;
 
-            const data = await response.json();
-            onLoginSuccess(data.access_token, data.user);
+            // 2. Token holen
+            const token = data.session.access_token;
+
+            // 3. Profildaten vom eigenen Backend holen (via E-Mail Match)
+            // Das Backend nutzt jetzt den Supabase-Token zur Identifizierung
+            const userResponse = await apiClient.get('/api/users/me', token);
+
+            onLoginSuccess(token, userResponse);
 
         } catch (err: any) {
-            setError(err.message);
+            console.error(err);
+            setMessage({ type: 'error', text: 'Login fehlgeschlagen: ' + err.message });
         } finally {
-            setIsLoading(false);
             onLoginEnd();
         }
     };
 
+    // --- REGISTRIERUNG ---
     const handleRegister = async (e: FormEvent) => {
         e.preventDefault();
-        setError('');
-        setIsLoading(true);
+        setMessage(null);
         onLoginStart();
 
-        const payload = {
-            name: name,
-            email: email,
-            password: password,
-            role: "kunde",
-            dogs: [{ name: dogName }]
-        };
-
         try {
-            const response = await fetch(`${API_BASE_URL}/api/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
+            // 1. User in Supabase Auth erstellen (Das "echte" Konto)
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email,
+                password,
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Registrierung fehlgeschlagen');
-            }
-            alert('Registrierung erfolgreich! Sie können sich jetzt anmelden.');
-            setIsLogin(true); // Zurück zum Login-Formular
+            if (authError) throw authError;
+
+            // 2. Profil im eigenen Backend anlegen (Datenbank-Eintrag)
+            // Wir senden ein Dummy-Passwort, da Supabase das echte Passwort verwaltet.
+            await apiClient.post('/api/register', {
+                name: name,
+                email: email,
+                password: "SUPABASE_MANAGED_ACCOUNT", // Dummy, wird nicht genutzt
+                role: "kunde",
+                dogs: [{ name: dogName }]
+            }, null); // Kein Token nötig, da offener Endpoint
+
+            setMessage({ type: 'success', text: 'Registrierung erfolgreich! Bitte prüfen Sie Ihre E-Mails.' });
+            setView('login');
 
         } catch (err: any) {
-            setError(err.message);
+            console.error(err);
+            setMessage({ type: 'error', text: 'Registrierung fehlgeschlagen: ' + err.message });
         } finally {
-            setIsLoading(false);
+            onLoginEnd();
+        }
+    };
+
+    // --- PASSWORT VERGESSEN ---
+    const handleForgot = async (e: FormEvent) => {
+        e.preventDefault();
+        setMessage(null);
+        onLoginStart();
+
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin, // Nutzer kommt hierher zurück
+            });
+            if (error) throw error;
+            setMessage({ type: 'success', text: 'Link zum Zurücksetzen wurde gesendet!' });
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message });
+        } finally {
             onLoginEnd();
         }
     };
@@ -447,57 +468,68 @@ const AuthScreen: FC<{
     return (
         <div className="auth-container">
             <div className="auth-card">
-                <img src="/logo.png" alt="PfotenCard Logo" style={{ width: '120px', height: 'auto', marginBottom: '1rem' }} />
+                <img src="/logo.png" alt="PfotenCard" style={{ width: '100px', margin: '0 auto 1rem', display: 'block' }} />
                 <h1>PfotenCard</h1>
-                <p className="subtitle">{isLogin ? 'Hundeschul-Verwaltung' : 'Neues Kundenkonto erstellen'}</p>
-                <form onSubmit={isLogin ? handleLogin : handleRegister}>
-                    {!isLogin && (
+                <p className="subtitle">
+                    {view === 'login' && 'Anmelden'}
+                    {view === 'register' && 'Neues Konto erstellen'}
+                    {view === 'forgot' && 'Passwort zurücksetzen'}
+                </p>
+
+                {message && (
+                    <div style={{
+                        padding: '10px',
+                        borderRadius: '8px',
+                        marginBottom: '1rem',
+                        backgroundColor: message.type === 'error' ? '#fee2e2' : '#dcfce7',
+                        color: message.type === 'error' ? '#991b1b' : '#166534',
+                        textAlign: 'center'
+                    }}>
+                        {message.text}
+                    </div>
+                )}
+
+                <form onSubmit={view === 'login' ? handleLogin : (view === 'register' ? handleRegister : handleForgot)}>
+
+                    {view === 'register' && (
                         <>
-                            <div className="form-group">
-                                <label htmlFor="name">Ihr Name</label>
-                                <input type="text" id="name" className="form-input" value={name} onChange={(e) => setName(e.target.value)} required />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="dogName">Name Ihres Hundes</label>
-                                <input type="text" id="dogName" className="form-input" value={dogName} onChange={(e) => setDogName(e.target.value)} required />
-                            </div>
+                            <div className="form-group"><label>Ihr Name</label><input type="text" className="form-input" value={name} onChange={e => setName(e.target.value)} required /></div>
+                            <div className="form-group"><label>Hundename</label><input type="text" className="form-input" value={dogName} onChange={e => setDogName(e.target.value)} required /></div>
                         </>
                     )}
+
                     <div className="form-group">
-                        <label htmlFor="email">E-Mail</label>
-                        <input type="email" id="email" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                        <label>E-Mail</label>
+                        <input type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} required />
                     </div>
-                    <div className="form-group">
-                        <label htmlFor="password">Passwort</label>
-                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <input type={showPassword ? 'text' : 'password'} id="password" className="form-input" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ paddingRight: '2.5rem' }} />
-                            <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} aria-label="Passwort anzeigen/verbergen">
-                                <Icon name={showPassword ? 'eye-off' : 'eye'} />
-                            </button>
+
+                    {view !== 'forgot' && (
+                        <div className="form-group">
+                            <label>Passwort</label>
+                            <input type="password" className="form-input" value={password} onChange={e => setPassword(e.target.value)} required />
                         </div>
-                    </div>
-                    {error && <p style={{ color: 'var(--brand-red)', textAlign: 'center' }}>{error}</p>}
-                    <button type="submit" className="button button-primary" style={{ marginTop: '1rem', width: '100%' }} disabled={isLoading}>
-                        {isLoading ? (isLogin ? 'Melde an...' : 'Registriere...') : (isLogin ? 'Anmelden' : 'Registrieren')}
+                    )}
+
+                    <button type="submit" className="button button-primary" style={{ width: '100%', marginTop: '1rem' }}>
+                        {view === 'login' ? 'Anmelden' : (view === 'register' ? 'Registrieren' : 'Link senden')}
                     </button>
                 </form>
-                {isLogin && (
-                    <button
-                        onClick={() => alert('Bitte wenden Sie sich an Ihren Trainer, um das Passwort zurückzusetzen.')}
-                        className="button-as-link"
-                        style={{ marginTop: '0.5rem', width: '100%', fontSize: '0.9rem' }}
-                    >
-                        Passwort vergessen?
-                    </button>
-                )}
-                <button onClick={() => setIsLogin(!isLogin)} className="button-as-link" style={{ marginTop: '1rem', width: '100%' }}>
-                    {isLogin ? 'Noch kein Konto? Jetzt registrieren' : 'Bereits ein Konto? Zum Login'}
-                </button>
+
+                <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
+                    {view === 'login' && (
+                        <>
+                            <button className="button-as-link" onClick={() => setView('forgot')}>Passwort vergessen?</button>
+                            <button className="button-as-link" onClick={() => setView('register')}>Noch kein Konto? Jetzt registrieren</button>
+                        </>
+                    )}
+                    {view !== 'login' && (
+                        <button className="button-as-link" onClick={() => setView('login')}>Zurück zum Login</button>
+                    )}
+                </div>
             </div>
         </div>
     );
 };
-
 // --- LAYOUT & UI KOMPONENTEN ---
 const OnlineStatusIndicator: FC = () => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -558,7 +590,7 @@ const Sidebar: FC<{ user: User; activePage: Page; setView: (view: View) => void;
     return (
         <aside className="sidebar">
             <div className="sidebar-header">
-                <Icon name="paw" className="logo" width="38" height="38" />
+                <Icon name="paw" className="logo" width="80" height="80" />
                 <h2>PfotenCard</h2>
                 <button className="sidebar-close-button" onClick={() => setSidebarOpen(false)} aria-label="Menü schließen">
                     <Icon name="x" />
@@ -2302,6 +2334,33 @@ const App: FC = () => {
         }
     }, [loggedInUser]); // Abhängig vom Login-Status
 
+    // State für Passwort-Update Modal
+    const [showPasswordReset, setShowPasswordReset] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+
+    useEffect(() => {
+        // Supabase Listener: Horcht auf Passwort-Reset Events
+        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                setShowPasswordReset(true);
+            }
+        });
+        return () => { authListener.subscription.unsubscribe(); };
+    }, []);
+
+    const handlePasswordUpdate = async () => {
+        if (!newPassword) return alert("Bitte Passwort eingeben");
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (!error) {
+            alert("Passwort erfolgreich geändert!");
+            setShowPasswordReset(false);
+            setNewPassword('');
+            // Optional: User direkt einloggen oder Token nutzen
+        } else {
+            alert("Fehler: " + error.message);
+        }
+    };
+
     const handleSetView = (newView: View) => {
         // Wenn wir von einer Detailansicht (Kunde oder Transaktion) wegnavigieren...
         if (view.customerId && newView.customerId !== view.customerId) {
@@ -2889,7 +2948,6 @@ const App: FC = () => {
                 />;
         }
     };
-
     return (
         <div className={`app-container ${isSidebarOpen ? "sidebar-open" : ""}`}>
             {isServerLoading.active && <LoadingSpinner message={isServerLoading.message} />}
@@ -2918,6 +2976,25 @@ const App: FC = () => {
             {deletingDocument && <DeleteDocumentModal document={deletingDocument} onClose={() => setDeletingDocument(null)} onConfirm={handleConfirmDeleteDocument} />}
             {dogFormModal.isOpen && <DogFormModal dog={dogFormModal.dog} onClose={() => setDogFormModal({ isOpen: false, dog: null })} onSave={handleSaveDog} />}
             {deletingDog && <DeleteDogModal dog={deletingDog} onClose={() => setDeletingDog(null)} onConfirm={handleConfirmDeleteDog} />}
+
+            {/* Passwort-Reset Modal */}
+            {showPasswordReset && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="modal-header blue"><h2>Neues Passwort vergeben</h2></div>
+                        <div className="modal-body">
+                            <p>Geben Sie hier Ihr neues Passwort ein.</p>
+                            <div className="form-group">
+                                <label>Neues Passwort</label>
+                                <input type="password" className="form-input" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="button button-primary" onClick={handlePasswordUpdate}>Speichern</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

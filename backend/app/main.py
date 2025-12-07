@@ -136,8 +136,29 @@ def update_user_endpoint(
     current_user: schemas.User = Depends(auth.get_current_active_user)
 ):
     # Sicherheitsprüfung: Admins, Mitarbeiter oder der Benutzer selbst dürfen bearbeiten
-    if current_user.role not in ['admin', 'mitarbeiter'] and current_user.id != user_id:
+    is_self = current_user.id == user_id
+    is_staff = current_user.role in ['admin', 'mitarbeiter']
+    
+    if not is_staff and not is_self:
         raise HTTPException(status_code=403, detail="Not authorized to perform this action")
+    
+    # Wenn ein Kunde seine eigenen Daten bearbeitet, darf er nur bestimmte Felder ändern
+    if is_self and current_user.role == 'kunde':
+        # Erstelle ein eingeschränktes Update-Objekt nur mit erlaubten Feldern
+        allowed_fields = {
+            'name': user_update.name,
+            'email': user_update.email,
+            'phone': user_update.phone,
+            # Alle anderen Felder werden ignoriert (role, balance, level_id, etc.)
+        }
+        # Erstelle ein neues UserUpdate-Objekt mit den erlaubten Feldern
+        # und den aktuellen Werten für die nicht-änderbaren Felder
+        user_update.role = current_user.role
+        user_update.balance = current_user.balance
+        user_update.level_id = current_user.level_id
+        user_update.is_vip = current_user.is_vip
+        user_update.is_expert = current_user.is_expert
+        user_update.is_active = current_user.is_active
 
     updated_user = crud.update_user(db=db, user_id=user_id, user=user_update)
     if updated_user is None:
@@ -262,14 +283,17 @@ def update_dog_endpoint(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(auth.get_current_active_user)
 ):
-    if current_user.role not in ['admin', 'mitarbeiter']:
-        raise HTTPException(status_code=403, detail="Not authorized to perform this action")
-
+    # Hole den Hund aus der Datenbank
     db_dog = crud.get_dog(db, dog_id=dog_id)
     if not db_dog:
         raise HTTPException(status_code=404, detail="Dog not found")
-
-    # Sicherheitsprüfung: Stelle sicher, dass der Hund zum Kunden des Bearbeiters gehört (optional)
+    
+    # Sicherheitsprüfung: Admin, Mitarbeiter oder der Besitzer des Hundes dürfen bearbeiten
+    is_owner = db_dog.owner_id == current_user.id
+    is_staff = current_user.role in ['admin', 'mitarbeiter']
+    
+    if not is_staff and not is_owner:
+        raise HTTPException(status_code=403, detail="Not authorized to perform this action")
 
     return crud.update_dog(db=db, dog_id=dog_id, dog=dog_update)
 
