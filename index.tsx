@@ -58,15 +58,23 @@ const apiClient = {
         return response.json();
     },
     post: async (path: string, data: any, token: string | null) => {
-        if (!token) throw new Error("No auth token provided");
+        // HIER WAR DER FEHLER: Die Prüfung "if (!token)..." wurde entfernt.
+
+        const headers: any = {
+            'Content-Type': 'application/json',
+        };
+
+        // Nur wenn ein Token da ist, fügen wir ihn hinzu
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}${path}`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json', // Wichtig: Wir senden JSON-Daten
-            },
-            body: JSON.stringify(data), // Die Daten in einen JSON-String umwandeln
+            headers: headers,
+            body: JSON.stringify(data),
         });
+
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.detail || `API request failed: ${response.statusText}`);
