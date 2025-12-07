@@ -1,61 +1,81 @@
 const CACHE_NAME = 'pfotencard-cache-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/index.css',
-  // In a real build process, you'd cache the compiled JS file (e.g., /assets/index-....js)
-  // For this setup, we cache the TSX to make it work in the dev environment.
-  '/index.tsx',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-];
+const urlsToCache = ['/', '/index.html', '/index.css'];
 
-// 1. Install the service worker and cache the app shell
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
-  );
+    event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
 });
 
-// 2. Serve from cache, fallback to network (Cache-First Strategy)
 self.addEventListener('fetch', event => {
-  // We only want to cache GET requests
-  if (event.request.method !== 'GET') {
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          // Serve from cache
-          return response;
-        }
-
-        // Not in cache, fetch from network
-        return fetch(event.request).then(
-          networkResponse => {
-            // Optional: Cache new requests dynamically
-            return caches.open(CACHE_NAME).then(cache => {
-              // Be careful not to cache API responses that change frequently
-              if (!event.request.url.includes('/api/')) {
-                  cache.put(event.request, networkResponse.clone());
-              }
-              return networkResponse;
-            });
-          }
-        );
-      })
-      .catch(error => {
-        console.error('Fetching failed:', error);
-        // You could return a generic offline page here if you have one cached
-      })
-  );
+    if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
+        return; // API-Anfragen nicht aus dem Cache bedienen
+    }
+    event.respondWith(
+        caches.match(event.request).then(response => {
+            return response || fetch(event.request);
+        })
+    );
 });
 
-// TODO: Implement background sync for offline transactions
-// This is an advanced topic involving IndexedDB to queue failed POST requests
-// and a 'sync' event listener to send them when online again.
+// ==========================================================
+// === FINALE LOGIK FÜR DIE HINTERGRUND-SYNCHRONISATION ===
+// ==========================================================
+
+self.addEventListener('sync', (event) => {
+    if (event.tag === 'sync-queued-requests') {
+        console.log('[Service Worker] Sync event received!');
+        event.waitUntil(syncQueuedRequests());
+    }
+});
+
+async function syncQueuedRequests() {
+    const db = await openDB();
+    const tx = db.transaction('queued-requests', 'readonly');
+    const store = tx.objectStore('queued-requests');
+    const queuedRequests = await store.getAll();
+
+    console.log('[Service Worker] Found requests to sync:', queuedRequests);
+
+    return Promise.all(queuedRequests.map(req =>
+        fetch(req.url, {
+            method: req.method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${req.token}`,
+            },
+            body: req.body ? JSON.stringify(req.body) : null,
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log(`[Service Worker] Request ${req.id} sent successfully, deleting from queue.`);
+                return deleteQueuedRequestFromDB(req.id);
+            } else {
+                console.error(`[Service Worker] Server error for request ${req.id}, will retry later.`, response);
+            }
+        })
+        .catch(error => {
+            console.error(`[Service Worker] Network error for request ${req.id}, will retry later.`, error);
+        })
+    ));
+}
+
+// --- IndexedDB-Helfer direkt im Service Worker ---
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('pfotencard-db', 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('queued-requests')) {
+                db.createObjectStore('queued-requests', { autoIncrement: true, keyPath: 'id' });
+            }
+        };
+    });
+}
+
+async function deleteQueuedRequestFromDB(id) {
+    const db = await openDB();
+    const tx = db.transaction('queued-requests', 'readwrite');
+    await tx.objectStore('queued-requests').delete(id);
+    return tx.done;
+}

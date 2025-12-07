@@ -15,9 +15,13 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     balance = Column(Float, default=0.0)
     customer_since = Column(DateTime, server_default=func.now())
-
+    phone = Column(String(50), nullable=True)
+    level_id = Column(Integer, default=1, nullable=False)
+    is_vip = Column(Boolean, default=False, nullable=False)  # <-- NEUE ZEILE
+    is_expert = Column(Boolean, default=False, nullable=False)
     dogs = relationship("Dog", back_populates="owner", cascade="all, delete-orphan")
-    transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
+    # HIER DIE KORREKTUR: Wir sagen SQLAlchemy, welche Spalte es für diese Beziehung nutzen soll.
+    transactions = relationship("Transaction", foreign_keys='[Transaction.user_id]', back_populates="user", cascade="all, delete-orphan")
     achievements = relationship("Achievement", back_populates="user", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
 
@@ -29,7 +33,7 @@ class Dog(Base):
     name = Column(String(255), index=True, nullable=False)
     breed = Column(String(255))
     birth_date = Column(Date)
-
+    chip = Column(String(50), nullable=True)
     owner = relationship("User", back_populates="dogs")
 
 
@@ -44,7 +48,8 @@ class Transaction(Base):
     balance_after = Column(Float, nullable=False)
     booked_by_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
-    user = relationship("User", back_populates="transactions")
+    # HIER DIE KORREKTUR: Wir weisen jede Beziehung explizit einer Fremdschlüssel-Spalte zu.
+    user = relationship("User", foreign_keys=[user_id], back_populates="transactions")
     booked_by = relationship("User", foreign_keys=[booked_by_id])
 
 
@@ -55,9 +60,9 @@ class Achievement(Base):
     requirement_id = Column(String(255), nullable=False)
     date_achieved = Column(DateTime, server_default=func.now())
     transaction_id = Column(Integer, ForeignKey('transactions.id'), nullable=True)
+    is_consumed = Column(Boolean, default=False, nullable=False)  # <-- NEUE ZEILE
 
     user = relationship("User", back_populates="achievements")
-
 
 class Document(Base):
     __tablename__ = 'documents'

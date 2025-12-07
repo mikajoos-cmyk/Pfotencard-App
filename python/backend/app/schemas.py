@@ -9,7 +9,7 @@ class DogBase(BaseModel):
     name: str
     breed: Optional[str] = None
     birth_date: Optional[date] = None
-
+    chip: Optional[str] = None
 
 class DogCreate(DogBase):
     pass
@@ -21,12 +21,21 @@ class UserBase(BaseModel):
     role: str
     is_active: bool = True
     balance: float = 0.0
-
+    phone: Optional[str] = None
+    level_id: int = 1
+    is_vip: bool = False
+    is_expert: bool = False
 
 class UserCreate(UserBase):
-    password: str
+    password: Optional[str] = None # <-- HIER DIE ÄNDERUNG
     dogs: List[DogCreate] = []
 
+class UserUpdate(UserBase):
+    password: Optional[str] = None
+
+class UserStatusUpdate(BaseModel):
+    is_vip: Optional[bool] = None
+    is_expert: Optional[bool] = None
 
 class TransactionBase(BaseModel):
     type: str
@@ -53,6 +62,7 @@ class Achievement(BaseModel):
     id: int
     requirement_id: str
     date_achieved: datetime
+    is_consumed: bool  # <-- NEUE ZEILE
 
     class Config:
         from_attributes = True
@@ -101,3 +111,12 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+class UserLevelUpdate(BaseModel):
+    level_id: int
+
+class UserVipUpdate(BaseModel):
+    is_vip: bool
+
+class UserExpertUpdate(BaseModel):
+    is_expert: bool

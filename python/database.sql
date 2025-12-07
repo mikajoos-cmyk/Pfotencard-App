@@ -3,10 +3,14 @@ CREATE TABLE `users` (
   `name` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `hashed_password` varchar(255) NOT NULL,
-  `role` varchar(50) NOT NULL COMMENT 'admin, mitarbeiter, kunde',
+  `role` varchar(50) NOT NULL,
+  `level_id` int NOT NULL DEFAULT '1',
   `is_active` tinyint(1) DEFAULT '1',
   `balance` float DEFAULT '0',
   `customer_since` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `phone` varchar(50) DEFAULT NULL,
+  `is_vip` tinyint(1) NOT NULL DEFAULT '0',
+  `is_expert` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -17,6 +21,7 @@ CREATE TABLE `dogs` (
   `name` varchar(255) NOT NULL,
   `breed` varchar(255) DEFAULT NULL,
   `birth_date` date DEFAULT NULL,
+  `chip` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `owner_id` (`owner_id`),
   CONSTRAINT `dogs_ibfk_1` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
@@ -44,8 +49,8 @@ CREATE TABLE `achievements` (
   `requirement_id` varchar(255) NOT NULL,
   `date_achieved` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `transaction_id` int DEFAULT NULL,
+  `is_consumed` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `user_id_requirement_id` (`user_id`,`requirement_id`),
   KEY `user_id` (`user_id`),
   KEY `transaction_id` (`transaction_id`),
   CONSTRAINT `achievements_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
@@ -65,11 +70,11 @@ CREATE TABLE `documents` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Fügen Sie hier einige Beispieldaten ein, damit die App nicht leer ist --
-INSERT INTO `users` (`name`, `email`, `hashed_password`, `role`, `is_active`, `balance`) VALUES
-('Admin Account', 'admin@pfotencard.de', '$2b$12$EixZaYVK1gSo9vS.D.rZa.9.DxV2a.2iHnsy.j5wZ.kZ3c8.r9h3S', 'admin', 1, 0),
-('Mitarbeiter Max', 'max@pfotencard.de', '$2b$12$EixZaYVK1gSo9vS.D.rZa.9.DxV2a.2iHnsy.j5wZ.kZ3c8.r9h3S', 'mitarbeiter', 1, 0),
-('Sabine Mustermann', 'sabine@email.com', '$2b$12$EixZaYVK1gSo9vS.D.rZa.9.DxV2a.2iHnsy.j5wZ.kZ3c8.r9h3S', 'kunde', 1, 150),
-('Jörg Schmidt', 'joerg@email.com', '$2b$12$EixZaYVK1gSo9vS.D.rZa.9.DxV2a.2iHnsy.j5wZ.kZ3c8.r9h3S', 'kunde', 1, 55.5);
+INSERT INTO `users` (`name`, `email`, `hashed_password`, `role`, `is_active`, `balance`, `level_id`, `is_vip`, `is_expert`) VALUES
+('Admin Account', 'admin@pfotencard.de', '$2b$12$ZJS4gBANdVT9x.bGQ2gmAOV15eRTKLRaUJWEUSkikLlm0bJJ8ESdW', 'admin', 1, 0, 1, false, false),
+('Mitarbeiter Max', 'max@pfotencard.de', '$2b$12$ZJS4gBANdVT9x.bGQ2gmAOV15eRTKLRaUJWEUSkikLlm0bJJ8ESdW', 'mitarbeiter', 1, 0, 1, false, false),
+('Sabine Mustermann', 'sabine@email.com', '$2b$12$ZJS4gBANdVT9x.bGQ2gmAOV15eRTKLRaUJWEUSkikLlm0bJJ8ESdW', 'kunde', 1, 150, 1, false, false),
+('Jörg Schmidt', 'joerg@email.com', '$2b$12$ZJS4gBANdVT9x.bGQ2gmAOV15eRTKLRaUJWEUSkikLlm0bJJ8ESdW', 'kunde', 1, 55.5, 1, false, false);
 
 INSERT INTO `dogs` (`owner_id`, `name`, `breed`, `birth_date`) VALUES
 (3, 'Bello', 'Golden Retriever', '2022-05-10'),
