@@ -24,6 +24,7 @@ os.makedirs(UPLOADS_DIR, exist_ok=True)
 # --- CORS Middleware ---
 origins = [
     "https://shadowsr769.vercel.app",
+    "https://pfotencard.joos-soft-solutions.de",
     "http://localhost:3000",         # Gängiger React-Port
     "http://localhost:5173",         # Gängiger Vite-Port
     "http://127.0.0.1:5173",         # Vite-Port mit IP statt Name
@@ -35,7 +36,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins, # In production, restrict this to your frontend's URL
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
