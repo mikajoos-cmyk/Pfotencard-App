@@ -1,0 +1,6 @@
+# ALTE MySQL-Datei - NICHT MEHR VERWENDEN
+# Diese Datei ist veraltet und wurde durch database_postgresql.sql ersetzt
+# Wird nur zur Referenz aufbewahrt
+
+# Das Projekt verwendet jetzt PostgreSQL/Supabase
+# Siehe: database_postgresql.sql
