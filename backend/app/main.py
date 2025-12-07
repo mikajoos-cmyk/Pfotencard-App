@@ -25,6 +25,7 @@ os.makedirs(UPLOADS_DIR, exist_ok=True)
 origins = [
     "https://shadowsr769.vercel.app",
     "https://pfotencard.joos-soft-solutions.de",
+    "https://www.pfotencard.joos-soft-solutions.de",
     "http://localhost:3000",         # Gängiger React-Port
     "http://localhost:5173",         # Gängiger Vite-Port
     "http://127.0.0.1:5173",         # Vite-Port mit IP statt Name
