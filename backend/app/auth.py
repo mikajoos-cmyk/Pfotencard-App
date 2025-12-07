@@ -15,7 +15,6 @@ from .database import get_db
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 Scheme
-# This tells FastAPI where to look for the token (in the "Authorization" header)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
 
@@ -35,40 +34,53 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        # Default expiration time if not provided
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
+# --- WICHTIG: DIE KORRIGIERTE FUNKTION ---
 async def get_current_active_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> schemas.User:
+    """
+    Validiert den Supabase JWT Token und holt den Benutzer aus der DB.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # Supabase Token dekodieren
-        # audience="authenticated" ist wichtig bei Supabase
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM], options={"verify_aud": False})
+        # 1. Token dekodieren
+        # WICHTIG: verify_aud=False ist nötig, da Supabase "authenticated" als Audience nutzt
+        payload = jwt.decode(
+            token, 
+            settings.SECRET_KEY, 
+            algorithms=[settings.ALGORITHM], 
+            options={"verify_aud": False} 
+        )
         
-        # Bei Supabase steht die Email im Feld 'email', 'sub' ist die UUID
+        # 2. E-Mail aus dem Feld "email" lesen (NICHT "sub")
         email: str = payload.get("email")
         
         if email is None:
+            print("DEBUG: Keine E-Mail im Token gefunden.")
             raise credentials_exception
+            
         token_data = schemas.TokenData(email=email)
-    except JWTError:
+        
+    except JWTError as e:
+        print(f"DEBUG: JWT Error: {e}")
         raise credentials_exception
 
-    # Benutzer in deiner SQL-Datenbank suchen
+    # 3. Benutzer in der Datenbank suchen
     user = crud.get_user_by_email(db, email=token_data.email)
+    
     if user is None:
-        # Optional: Wenn User in Supabase existiert aber nicht in DB, hier automatisch anlegen?
-        # Für jetzt werfen wir einen Fehler:
+        print(f"DEBUG: User mit Email {token_data.email} nicht in DB gefunden.")
+        # Falls der Token gültig ist, aber der User fehlt -> 401
         raise credentials_exception
 
     if not user.is_active:
