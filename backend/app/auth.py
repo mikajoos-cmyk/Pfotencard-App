@@ -34,13 +34,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
+        # Default expiration time if not provided
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
-# --- WICHTIG: DIE KORRIGIERTE FUNKTION ---
 async def get_current_active_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> schemas.User:
@@ -52,6 +52,14 @@ async def get_current_active_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
+    # --- DEBUGGING START ---
+    print(f"DEBUG: Starte Token-Validierung...")
+    # Wir zeigen nur die ersten 5 Zeichen des Secrets, um sicherzugehen, dass es das richtige ist
+    safe_secret_preview = settings.SECRET_KEY[:5] if settings.SECRET_KEY else "NONE"
+    print(f"DEBUG: Verwendetes SECRET_KEY (Start): {safe_secret_preview}...")
+    # --- DEBUGGING END ---
+
     try:
         # 1. Token dekodieren
         # WICHTIG: verify_aud=False ist nötig, da Supabase "authenticated" als Audience nutzt
@@ -62,28 +70,37 @@ async def get_current_active_user(
             options={"verify_aud": False} 
         )
         
+        # --- DEBUGGING START ---
+        print(f"DEBUG: Token erfolgreich dekodiert.")
+        # print(f"DEBUG: Token Payload: {payload}") # Vorsicht: Zeigt alle Daten im Log
+        # --- DEBUGGING END ---
+
         # 2. E-Mail aus dem Feld "email" lesen (NICHT "sub")
         email: str = payload.get("email")
         
         if email is None:
-            print("DEBUG: Keine E-Mail im Token gefunden.")
+            print("DEBUG: FEHLER - Keine E-Mail im Token-Feld 'email' gefunden.")
             raise credentials_exception
             
+        print(f"DEBUG: E-Mail aus Token extrahiert: {email}")
         token_data = schemas.TokenData(email=email)
         
     except JWTError as e:
-        print(f"DEBUG: JWT Error: {e}")
+        print(f"DEBUG: JWT Error (Dekodierung fehlgeschlagen): {str(e)}")
+        # Häufiger Fehler: Signature verification failed -> Falsches Secret
         raise credentials_exception
 
     # 3. Benutzer in der Datenbank suchen
     user = crud.get_user_by_email(db, email=token_data.email)
     
     if user is None:
-        print(f"DEBUG: User mit Email {token_data.email} nicht in DB gefunden.")
+        print(f"DEBUG: FEHLER - User mit E-Mail '{token_data.email}' wurde in der SQL-Datenbank NICHT gefunden.")
         # Falls der Token gültig ist, aber der User fehlt -> 401
         raise credentials_exception
 
     if not user.is_active:
+        print(f"DEBUG: FEHLER - User '{token_data.email}' ist inaktiv.")
         raise HTTPException(status_code=400, detail="Inactive user")
 
+    print(f"DEBUG: Login erfolgreich für User ID: {user.id}")
     return user
