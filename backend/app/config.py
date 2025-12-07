@@ -1,9 +1,9 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    # WICHTIG: Tragen Sie hier Ihre MySQL-Zugangsdaten ein!
-    # Beispiel: "mysql+mysqlconnector://user:password@hostname/database_name"
-    DATABASE_URL: str = "mysql+mysqlconnector://root:borussen@localhost/pfoten_card"
+    # WICHTIG: Tragen Sie hier Ihre PostgreSQL/Supabase-Zugangsdaten ein!
+    # Beispiel: "postgresql://user:password@host:port/database_name"
+    DATABASE_URL: str = "postgresql://user:password@host:5432/pfoten_card"
 
     # Sicherheitsschlüssel für JWT. UNBEDINGT ÄNDERN für den Produktivbetrieb!
     # Kann mit `openssl rand -hex 32` generiert werden.

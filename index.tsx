@@ -11,27 +11,27 @@ type View = { page: Page; customerId?: string, subPage?: 'detail' | 'transaction
 interface User { id: string; name: string; email: string; role: UserRole; customerId?: string; createdAt: Date; }
 interface Level { id: number; name: string; imageUrl: string; }
 interface Customer {
-  id: string; firstName: string; lastName: string; dogName: string; balance: number;
-  levelId: number; createdBy: string; createdAt: Date; isVip?: boolean; isExpert?: boolean;
-  levelUpHistory: { [key: number]: Date };
-  email?: string;
-  phone?: string;
-  chip?: string;
+    id: string; firstName: string; lastName: string; dogName: string; balance: number;
+    levelId: number; createdBy: string; createdAt: Date; isVip?: boolean; isExpert?: boolean;
+    levelUpHistory: { [key: number]: Date };
+    email?: string;
+    phone?: string;
+    chip?: string;
 }
 interface Transaction {
-  id: string; customerId: string; createdBy: string;
-  type: 'topup' | 'bonus' | 'debit' | 'event';
-  title: string; amount: number; createdAt: Date;
-  meta?: { requirementId?: string; };
+    id: string; customerId: string; createdBy: string;
+    type: 'topup' | 'bonus' | 'debit' | 'event';
+    title: string; amount: number; createdAt: Date;
+    meta?: { requirementId?: string; };
 }
 interface DocumentFile {
-  id: string;
-  customerId: string;
-  file: File;
-  name: string;
-  type: string;
-  size: number;
-  url: string;
+    id: string;
+    customerId: string;
+    file: File;
+    name: string;
+    type: string;
+    size: number;
+    url: string;
 }
 
 
@@ -40,94 +40,94 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000
 console.log(API_BASE_URL);
 // Neuer API-Helfer
 const apiClient = {
-  get: async (path: string, token: string | null) => {
-    if (!token) throw new Error("No auth token provided");
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    if (!response.ok) throw new Error(`API request failed: ${response.statusText}`);
-    return response.json();
-  },
-  post: async (path: string, data: any, token: string | null) => {
-    if (!token) throw new Error("No auth token provided");
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json', // Wichtig: Wir senden JSON-Daten
-      },
-      body: JSON.stringify(data), // Die Daten in einen JSON-String umwandeln
-    });
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `API request failed: ${response.statusText}`);
-    }
-    return response.json();
-  },
-  put: async (path: string, data: any, token: string | null) => {
-    if (!token) throw new Error("No auth token provided");
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `API request failed: ${response.statusText}`);
-    }
-    return response.json();
-  },
-  setVipStatus: async (userId: string, isVip: boolean, token: string | null) => {
-    if (!token) throw new Error("No auth token provided");
-    return apiClient.put(`/api/users/${userId}/vip`, { is_vip: isVip }, token);
-  },
-  setExpertStatus: async (userId: string, isExpert: boolean, token: string | null) => {
-    if (!token) throw new Error("No auth token provided");
-    return apiClient.put(`/api/users/${userId}/expert`, { is_expert: isExpert }, token);
-  },
-   delete: async (path: string, token: string | null) => {
+    get: async (path: string, token: string | null) => {
         if (!token) throw new Error("No auth token provided");
         const response = await fetch(`${API_BASE_URL}${path}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) throw new Error(`API request failed: ${response.statusText}`);
+        return response.json();
+    },
+    post: async (path: string, data: any, token: string | null) => {
+        if (!token) throw new Error("No auth token provided");
+        const response = await fetch(`${API_BASE_URL}${path}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json', // Wichtig: Wir senden JSON-Daten
+            },
+            body: JSON.stringify(data), // Die Daten in einen JSON-String umwandeln
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || `API request failed: ${response.statusText}`);
+        }
+        return response.json();
+    },
+    put: async (path: string, data: any, token: string | null) => {
+        if (!token) throw new Error("No auth token provided");
+        const response = await fetch(`${API_BASE_URL}${path}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || `API request failed: ${response.statusText}`);
+        }
+        return response.json();
+    },
+    setVipStatus: async (userId: string, isVip: boolean, token: string | null) => {
+        if (!token) throw new Error("No auth token provided");
+        return apiClient.put(`/api/users/${userId}/vip`, { is_vip: isVip }, token);
+    },
+    setExpertStatus: async (userId: string, isExpert: boolean, token: string | null) => {
+        if (!token) throw new Error("No auth token provided");
+        return apiClient.put(`/api/users/${userId}/expert`, { is_expert: isExpert }, token);
+    },
+    delete: async (path: string, token: string | null) => {
+        if (!token) throw new Error("No auth token provided");
+        const response = await fetch(`${API_BASE_URL}${path}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
         });
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.detail || `API request failed`);
         }
         return response.json();
-      },
-  upload: async (path: string, file: File, token: string | null) => {
-    if (!token) throw new Error("No auth token provided");
-    const formData = new FormData();
-    formData.append("upload_file", file); // Muss zum Backend-Parameter "upload_file" passen
+    },
+    upload: async (path: string, file: File, token: string | null) => {
+        if (!token) throw new Error("No auth token provided");
+        const formData = new FormData();
+        formData.append("upload_file", file); // Muss zum Backend-Parameter "upload_file" passen
 
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }, // KEIN Content-Type, Browser setzt ihn
-      body: formData,
-    });
+        const response = await fetch(`${API_BASE_URL}${path}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }, // KEIN Content-Type, Browser setzt ihn
+            body: formData,
+        });
 
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `File upload failed`);
-    }
-    return response.json();
-},
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || `File upload failed`);
+        }
+        return response.json();
+    },
 };
 
 const getInitials = (firstName: string, lastName: string = '') => {
-  const first = firstName ? firstName.charAt(0) : '';
-  const last = lastName ? lastName.charAt(0) : '';
-  return `${first}${last}`.toUpperCase();
+    const first = firstName ? firstName.charAt(0) : '';
+    const last = lastName ? lastName.charAt(0) : '';
+    return `${first}${last}`.toUpperCase();
 };
 
 const getAvatarColorClass = (name: string) => {
@@ -143,28 +143,28 @@ const VIP_LEVEL: Level = { id: 99, name: 'VIP-Kunde', imageUrl: 'https://hundeze
 const EXPERT_LEVEL: Level = { id: 100, name: 'Experte', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/09/DZKB-Experte.png' };
 
 const LEVELS: Level[] = [
-  { id: 1, name: 'Welpen', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/L1.png' },
-  { id: 2, name: 'Grundlagen', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/L2.png' },
-  { id: 3, name: 'Fortgeschrittene', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/L3.png' },
-  { id: 4, name: 'Masterclass', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/L4.png' },
-  { id: 5, name: 'Hundeführerschein', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/L5.png' },
+    { id: 1, name: 'Welpen', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/L1.png' },
+    { id: 2, name: 'Grundlagen', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/L2.png' },
+    { id: 3, name: 'Fortgeschrittene', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/L3.png' },
+    { id: 4, name: 'Masterclass', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/L4.png' },
+    { id: 5, name: 'Hundeführerschein', imageUrl: 'https://hundezentrum-bayerischer-wald.de/wp-content/uploads/2025/08/L5.png' },
 ];
 
 let CUSTOMERS: Customer[] = [
-  { id: 'cust-anna', firstName: 'Anna-Maria', lastName: 'Schoss', dogName: 'Banu', balance: 229.00, levelId: 1, createdBy: 'user-admin-1', createdAt: new Date('2025-02-09'), isVip: false, isExpert: false, levelUpHistory: {}, email: 'anna.schoss@email.de', phone: '+49 123 456789', chip: '987000012345678' },
-  { id: 'cust-1', firstName: 'Jörg', lastName: 'Jäger', dogName: 'Hasso', balance: 10.00, levelId: 1, createdBy: 'user-staff-2', createdAt: new Date('2023-11-20'), isVip: false, isExpert: false, levelUpHistory: {} },
-  { id: 'cust-2', firstName: 'Sabine', lastName: 'Sonne', dogName: 'Luna', balance: 25.00, levelId: 1, createdBy: 'user-staff-1', createdAt: new Date('2023-12-01'), isVip: false, isExpert: false, levelUpHistory: {} },
-  { id: 'cust-3', firstName: 'Tom', lastName: 'Test', dogName: 'Rocky', balance: 300.00, levelId: 1, createdBy: 'user-staff-2', createdAt: new Date('2024-01-10'), isVip: false, isExpert: false, levelUpHistory: {}, email: 'tom@mail.de' },
+    { id: 'cust-anna', firstName: 'Anna-Maria', lastName: 'Schoss', dogName: 'Banu', balance: 229.00, levelId: 1, createdBy: 'user-admin-1', createdAt: new Date('2025-02-09'), isVip: false, isExpert: false, levelUpHistory: {}, email: 'anna.schoss@email.de', phone: '+49 123 456789', chip: '987000012345678' },
+    { id: 'cust-1', firstName: 'Jörg', lastName: 'Jäger', dogName: 'Hasso', balance: 10.00, levelId: 1, createdBy: 'user-staff-2', createdAt: new Date('2023-11-20'), isVip: false, isExpert: false, levelUpHistory: {} },
+    { id: 'cust-2', firstName: 'Sabine', lastName: 'Sonne', dogName: 'Luna', balance: 25.00, levelId: 1, createdBy: 'user-staff-1', createdAt: new Date('2023-12-01'), isVip: false, isExpert: false, levelUpHistory: {} },
+    { id: 'cust-3', firstName: 'Tom', lastName: 'Test', dogName: 'Rocky', balance: 300.00, levelId: 1, createdBy: 'user-staff-2', createdAt: new Date('2024-01-10'), isVip: false, isExpert: false, levelUpHistory: {}, email: 'tom@mail.de' },
 ];
 
 const INITIAL_USERS: User[] = [
-  { id: 'user-admin-1', name: 'Christian Christian', email: 'christian@dogslife.de', role: 'admin', createdAt: new Date('2025-08-12') },
-  { id: 'user-staff-1', name: 'Sophie Sophie', email: 'sophie@dogslife.de', role: 'mitarbeiter', createdAt: new Date('2025-08-12') },
-  { id: 'user-staff-2', name: 'Sandra Sandra', email: 'sandra@dogslife.de', role: 'mitarbeiter', createdAt: new Date('2025-08-12') },
-  { id: 'user-staff-3', name: 'Susi Susi', email: 'susi@dogslife.de', role: 'mitarbeiter', createdAt: new Date('2025-08-12') },
-  { id: 'user-staff-4', name: 'Petra Petra', email: 'petra@dogslife.de', role: 'mitarbeiter', createdAt: new Date('2025-08-12') },
-  { id: 'user-customer-1', name: 'Anna-Maria Schoss', email: 'anna.schoss@email.de', role: 'customer', customerId: 'cust-anna', createdAt: new Date('2025-02-09') },
-  { id: 'user-customer-2', name: 'Tom Test', email: 'tom@mail.de', role: 'customer', customerId: 'cust-3', createdAt: new Date('2024-01-10')},
+    { id: 'user-admin-1', name: 'Christian Christian', email: 'christian@dogslife.de', role: 'admin', createdAt: new Date('2025-08-12') },
+    { id: 'user-staff-1', name: 'Sophie Sophie', email: 'sophie@dogslife.de', role: 'mitarbeiter', createdAt: new Date('2025-08-12') },
+    { id: 'user-staff-2', name: 'Sandra Sandra', email: 'sandra@dogslife.de', role: 'mitarbeiter', createdAt: new Date('2025-08-12') },
+    { id: 'user-staff-3', name: 'Susi Susi', email: 'susi@dogslife.de', role: 'mitarbeiter', createdAt: new Date('2025-08-12') },
+    { id: 'user-staff-4', name: 'Petra Petra', email: 'petra@dogslife.de', role: 'mitarbeiter', createdAt: new Date('2025-08-12') },
+    { id: 'user-customer-1', name: 'Anna-Maria Schoss', email: 'anna.schoss@email.de', role: 'customer', customerId: 'cust-anna', createdAt: new Date('2025-02-09') },
+    { id: 'user-customer-2', name: 'Tom Test', email: 'tom@mail.de', role: 'customer', customerId: 'cust-3', createdAt: new Date('2024-01-10') },
 ];
 
 
@@ -180,21 +180,21 @@ let TRANSACTIONS: Transaction[] = [
 
 // --- LOGIK & KONSTANTEN ---
 const LEVEL_REQUIREMENTS: { [key: number]: { id: string; name: string; required: number }[] } = {
-//   1: [{ id: 'group_class', name: 'Gruppenstunde', required: 6 }, { id: 'exam', name: 'Prüfung', required: 1 }],
-  2: [{ id: 'group_class', name: 'Gruppenstunde', required: 6 }, { id: 'exam', name: 'Prüfung', required: 1 }],
-  3: [{ id: 'group_class', name: 'Gruppenstunde', required: 6 }, { id: 'exam', name: 'Prüfung', required: 1 }],
-  4: [{ id: 'social_walk', name: 'Social Walk', required: 6 }, { id: 'tavern_training', name: 'Wirtshaustraining', required: 2 }, { id: 'exam', name: 'Prüfung', required: 1 }],
-  5: [{ id: 'exam', name: 'Prüfung', required: 1 }],
+    //   1: [{ id: 'group_class', name: 'Gruppenstunde', required: 6 }, { id: 'exam', name: 'Prüfung', required: 1 }],
+    2: [{ id: 'group_class', name: 'Gruppenstunde', required: 6 }, { id: 'exam', name: 'Prüfung', required: 1 }],
+    3: [{ id: 'group_class', name: 'Gruppenstunde', required: 6 }, { id: 'exam', name: 'Prüfung', required: 1 }],
+    4: [{ id: 'social_walk', name: 'Social Walk', required: 6 }, { id: 'tavern_training', name: 'Wirtshaustraining', required: 2 }, { id: 'exam', name: 'Prüfung', required: 1 }],
+    5: [{ id: 'exam', name: 'Prüfung', required: 1 }],
 };
 // In frontend/index.tsx
 
 const DOGLICENSE_PREREQS = [
-  { id: 'lecture_bonding', name: 'Vortrag Bindung & Beziehung', required: 1 },
-  { id: 'lecture_hunting', name: 'Vortrag Jagdverhalten', required: 1 },
-  { id: 'ws_communication', name: 'WS Kommunikation & Körpersprache', required: 1 },
-  { id: 'ws_stress', name: 'WS Stress & Impulskontrolle', required: 1 },
-  { id: 'theory_license', name: 'Theorieabend Hundeführerschein', required: 1 },
-  { id: 'first_aid', name: 'Erste-Hilfe-Kurs', required: 1},
+    { id: 'lecture_bonding', name: 'Vortrag Bindung & Beziehung', required: 1 },
+    { id: 'lecture_hunting', name: 'Vortrag Jagdverhalten', required: 1 },
+    { id: 'ws_communication', name: 'WS Kommunikation & Körpersprache', required: 1 },
+    { id: 'ws_stress', name: 'WS Stress & Impulskontrolle', required: 1 },
+    { id: 'theory_license', name: 'Theorieabend Hundeführerschein', required: 1 },
+    { id: 'first_aid', name: 'Erste-Hilfe-Kurs', required: 1 },
 ];
 
 // In frontend/index.tsx (ersetzt die bisherigen Level-Funktionen)
@@ -274,40 +274,40 @@ const areLevelRequirementsMet = (customer: any): boolean => {
 // --- ICONS ---
 const Icon = ({ name, ...props }: { name: string } & React.SVGProps<SVGSVGElement>) => {
     const icons: { [key: string]: { path: React.ReactNode; customProps?: any } } = {
-        dashboard: { path: <><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></> },
-        customers: { path: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></> },
-        reports: { path: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></> },
-        users: { path: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></> },
-        user: { path: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></> },
-        mail: { path: <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></> },
-        phone: { path: <><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></> },
+        dashboard: { path: <><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></> },
+        customers: { path: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></> },
+        reports: { path: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></> },
+        users: { path: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></> },
+        user: { path: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></> },
+        mail: { path: <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></> },
+        phone: { path: <><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></> },
         calendar: { path: <><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></> },
-        logout: { path: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></> },
-        arrowLeft: { path: <><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></> },
-        arrowRight: { path: <><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></> },
-        arrowDown: { path: <><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></> },
-        check: { path: <><path d="M20 6 9 17l-5-5"/></> },
-        x: { path: <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></> },
+        logout: { path: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></> },
+        arrowLeft: { path: <><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></> },
+        arrowRight: { path: <><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></> },
+        arrowDown: { path: <><path d="M12 5v14" /><path d="m19 12-7 7-7-7" /></> },
+        check: { path: <><path d="M20 6 9 17l-5-5" /></> },
+        x: { path: <><path d="M18 6 6 18" /><path d="m6 6 12 12" /></> },
         // KORRIGIERTES PAW-ICON
         paw: {
-            path: <path d="M12 5.6a3.2 3.2 0 0 0-3.2 3.2c0 2.4 2.2 4.9 2.9 5.5.1.1.3.1.4 0 .7-.6 2.9-3.1 2.9-5.5A3.2 3.2 0 0 0 12 5.6Z M4.7 9.8a2.1 2.1 0 0 0-2.1 2.1c0 1.6 1.5 3.2 1.9 3.6.1.1.3.1.4 0 .4-.4 1.9-2 1.9-3.6a2.1 2.1 0 0 0-2.1-2.1Z M19.3 9.8a2.1 2.1 0 0 0-2.1 2.1c0 1.6 1.5 3.2 1.9 3.6.1.1.3.1.4 0 .4-.4 1.9-2 1.9-3.6a2.1 2.1 0 0 0-2.1-2.1Z M8.3 4.2a2.3 2.3 0 0 0-2.3 2.3c0 1.7 1.6 3.5 2.1 4 .1.1.3.1.4 0 .5-.5 2.1-2.3 2.1-4a2.3 2.3 0 0 0-2.3-2.3Z M15.7 4.2a2.3 2.3 0 0 0-2.3 2.3c0 1.7 1.6 3.5 2.1 4 .1.1.3.1.4 0 .5-.5 2.1-2.3 2.1-4a2.3 2.3 0 0 0-2.3-2.3Z"/>,
+            path: <path d="M12 5.6a3.2 3.2 0 0 0-3.2 3.2c0 2.4 2.2 4.9 2.9 5.5.1.1.3.1.4 0 .7-.6 2.9-3.1 2.9-5.5A3.2 3.2 0 0 0 12 5.6Z M4.7 9.8a2.1 2.1 0 0 0-2.1 2.1c0 1.6 1.5 3.2 1.9 3.6.1.1.3.1.4 0 .4-.4 1.9-2 1.9-3.6a2.1 2.1 0 0 0-2.1-2.1Z M19.3 9.8a2.1 2.1 0 0 0-2.1 2.1c0 1.6 1.5 3.2 1.9 3.6.1.1.3.1.4 0 .4-.4 1.9-2 1.9-3.6a2.1 2.1 0 0 0-2.1-2.1Z M8.3 4.2a2.3 2.3 0 0 0-2.3 2.3c0 1.7 1.6 3.5 2.1 4 .1.1.3.1.4 0 .5-.5 2.1-2.3 2.1-4a2.3 2.3 0 0 0-2.3-2.3Z M15.7 4.2a2.3 2.3 0 0 0-2.3 2.3c0 1.7 1.6 3.5 2.1 4 .1.1.3.1.4 0 .5-.5 2.1-2.3 2.1-4a2.3 2.3 0 0 0-2.3-2.3Z" />,
             customProps: { fill: "currentColor", stroke: "none" }
         },
-        creditCard: { path: <><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></> },
-        heart: { path: <><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></> },
-        trendingUp: { path: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></> },
-        edit: { path: <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></> },
-        trash: { path: <><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></> },
-        file: { path: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></> },
-        share: { path: <><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></> },
-        upload: { path: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></> },
-        download: { path: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></> },
-        printer: { path: <><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></> },
-        wifi: { path: <><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></> },
-        refresh: { path: <><path d="M21.5 2v6h-6"/><path d="M2.5 22v-6h6"/><path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.2"/></> },
+        creditCard: { path: <><rect width="20" height="14" x="2" y="5" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></> },
+        heart: { path: <><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></> },
+        trendingUp: { path: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></> },
+        edit: { path: <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></> },
+        trash: { path: <><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></> },
+        file: { path: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></> },
+        share: { path: <><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" x2="12" y1="2" y2="15" /></> },
+        upload: { path: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" /></> },
+        download: { path: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></> },
+        printer: { path: <><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></> },
+        wifi: { path: <><path d="M5 12.55a11 11 0 0 1 14.08 0" /><path d="M1.42 9a16 16 0 0 1 21.16 0" /><path d="M8.53 16.11a6 6 0 0 1 6.95 0" /><line x1="12" x2="12.01" y1="20" y2="20" /></> },
+        refresh: { path: <><path d="M21.5 2v6h-6" /><path d="M2.5 22v-6h6" /><path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.2" /></> },
         menu: { path: <><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></> },
-        eye: { path: <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></> },
-        'eye-off': { path: <><path d="m9.9 9.9 4.2 4.2"/><path d="M10.7 15.3a7 7 0 0 1-8.1-8.1l9.8 9.8"/><path d="M7.5 4.2C9.2 3.3 11.2 3 13 3s3.8.3 5.5 1.2l-2.2 2.2"/><path d="M19.8 17.8a14 14 0 0 1-11.2-4.3l1.5-1.5"/><path d="m2.2 2.2 20 20"/></> },
+        eye: { path: <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></> },
+        'eye-off': { path: <><path d="m9.9 9.9 4.2 4.2" /><path d="M10.7 15.3a7 7 0 0 1-8.1-8.1l9.8 9.8" /><path d="M7.5 4.2C9.2 3.3 11.2 3 13 3s3.8.3 5.5 1.2l-2.2 2.2" /><path d="M19.8 17.8a14 14 0 0 1-11.2-4.3l1.5-1.5" /><path d="m2.2 2.2 20 20" /></> },
     };
 
     const selectedIcon = icons[name];
@@ -321,22 +321,22 @@ const Icon = ({ name, ...props }: { name: string } & React.SVGProps<SVGSVGElemen
         strokeLinecap: "round",
         strokeLinejoin: "round",
     };
-    
+
     const finalProps = { ...defaultProps, ...props, ...selectedIcon.customProps };
 
     const customClassName = props.className || '';
 
-   return (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"  // DIESE ZEILE WIEDER HINZUFÜGEN
-        height="24" // DIESE ZEILE WIEDER HINZUFÜGEN
-        className={`icon icon-${name} ${customClassName}`.trim()}
-        {...finalProps}
-    >
-        {selectedIcon.path}
-    </svg>
-);
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"  // DIESE ZEILE WIEDER HINZUFÜGEN
+            height="24" // DIESE ZEILE WIEDER HINZUFÜGEN
+            className={`icon icon-${name} ${customClassName}`.trim()}
+            {...finalProps}
+        >
+            {selectedIcon.path}
+        </svg>
+    );
 };
 
 // --- NEUE LADE-KOMPONENTE ---
@@ -348,9 +348,9 @@ const LoadingSpinner: FC<{ message: string }> = ({ message }) => (
         zIndex: 9999,
     }}>
         <svg width="60" height="60" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#16a34a">
-            <path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25"/>
+            <path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25" />
             <path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z">
-                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.75s" repeatCount="indefinite"/>
+                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.75s" repeatCount="indefinite" />
             </path>
         </svg>
         <p style={{ marginTop: '1rem', fontSize: '1.1rem', fontWeight: 500, color: '#334155' }}>{message}</p>
@@ -447,6 +447,7 @@ const AuthScreen: FC<{
     return (
         <div className="auth-container">
             <div className="auth-card">
+                <img src="/logo.png" alt="PfotenCard Logo" style={{ width: '120px', height: 'auto', marginBottom: '1rem' }} />
                 <h1>PfotenCard</h1>
                 <p className="subtitle">{isLogin ? 'Hundeschul-Verwaltung' : 'Neues Kundenkonto erstellen'}</p>
                 <form onSubmit={isLogin ? handleLogin : handleRegister}>
@@ -480,6 +481,15 @@ const AuthScreen: FC<{
                         {isLoading ? (isLogin ? 'Melde an...' : 'Registriere...') : (isLogin ? 'Anmelden' : 'Registrieren')}
                     </button>
                 </form>
+                {isLogin && (
+                    <button
+                        onClick={() => alert('Bitte wenden Sie sich an Ihren Trainer, um das Passwort zurückzusetzen.')}
+                        className="button-as-link"
+                        style={{ marginTop: '0.5rem', width: '100%', fontSize: '0.9rem' }}
+                    >
+                        Passwort vergessen?
+                    </button>
+                )}
                 <button onClick={() => setIsLogin(!isLogin)} className="button-as-link" style={{ marginTop: '1rem', width: '100%' }}>
                     {isLogin ? 'Noch kein Konto? Jetzt registrieren' : 'Bereits ein Konto? Zum Login'}
                 </button>
@@ -502,14 +512,14 @@ const OnlineStatusIndicator: FC = () => {
 
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
-        
+
         if (isOnline) {
             setLastSyncText('Gerade eben');
         }
 
         return () => {
             window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline',handleOffline);
+            window.removeEventListener('offline', handleOffline);
         };
     }, [isOnline]);
 
@@ -537,7 +547,7 @@ const Sidebar: FC<{ user: User; activePage: Page; setView: (view: View) => void;
         { id: 'reports', label: 'Berichte', icon: 'reports', roles: ['admin', 'mitarbeiter'] },
         { id: 'users', label: 'Benutzer', icon: 'users', roles: ['admin'] },
     ];
-    
+
     const handleNavClick = (view: View) => {
         setView(view);
         if (window.innerWidth <= 992) {
@@ -548,7 +558,7 @@ const Sidebar: FC<{ user: User; activePage: Page; setView: (view: View) => void;
     return (
         <aside className="sidebar">
             <div className="sidebar-header">
-                <Icon name="paw" className="logo"  width="38" height="38" />
+                <Icon name="paw" className="logo" width="38" height="38" />
                 <h2>PfotenCard</h2>
                 <button className="sidebar-close-button" onClick={() => setSidebarOpen(false)} aria-label="Menü schließen">
                     <Icon name="x" />
@@ -566,7 +576,7 @@ const Sidebar: FC<{ user: User; activePage: Page; setView: (view: View) => void;
             <div className="sidebar-footer">
                 <div className="user-profile-container">
                     <div className="user-profile">
-                         <div className={`initials-avatar small ${getAvatarColorClass(user.name)}`}>
+                        <div className={`initials-avatar small ${getAvatarColorClass(user.name)}`}>
                             {getInitials(user.name.split(' ')[0], user.name.split(' ')[1])}
                         </div>
                         <div className="user-info">
@@ -651,7 +661,7 @@ const KpiCard: FC<KpiCardProps> = ({ title, value, icon, bgIcon, color, onClick 
     return onClick ? <button onClick={onClick} className="kpi-card-button">{cardContent}</button> : cardContent;
 };
 
-const AddCustomerModal: FC<{ onClose: () => void, onAddCustomer: (newCustomer: Omit<Customer, 'id'|'createdBy'|'createdAt'|'levelId'|'balance'|'levelUpHistory'>) => void }> = ({ onClose, onAddCustomer }) => {
+const AddCustomerModal: FC<{ onClose: () => void, onAddCustomer: (newCustomer: Omit<Customer, 'id' | 'createdBy' | 'createdAt' | 'levelId' | 'balance' | 'levelUpHistory'>) => void }> = ({ onClose, onAddCustomer }) => {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [dogName, setDogName] = useState('');
@@ -697,7 +707,7 @@ const AddCustomerModal: FC<{ onClose: () => void, onAddCustomer: (newCustomer: O
                             <div className="form-group"><label>E-Mail</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
                             <div className="form-group"><label>Telefon</label><input type="tel" value={phone} onChange={e => setPhone(e.target.value)} /></div>
                         </div>
-                        <h4 style={{marginTop: '1.5rem'}}>Hundedaten</h4>
+                        <h4 style={{ marginTop: '1.5rem' }}>Hundedaten</h4>
                         <div className="form-grid">
                             <div className="form-group"><label>Hundename*</label><input type="text" value={dogName} onChange={e => setDogName(e.target.value)} required /></div>
                             {/* NEU: Input-Felder für Rasse und Geburtsdatum */}
@@ -780,35 +790,35 @@ const DashboardPage: FC<{
                 <KpiCard title="Transaktionen Monat" value={transactionsMonth.toString()} icon="trendingUp" bgIcon="trendingUp" color="purple" onClick={() => onKpiClick('transactionsMonth', 'purple')} />
             </div>
             <div className="dashboard-bottom-grid">
-                 <div className="content-box">
+                <div className="content-box">
                     <h2>Aktuelle Kunden</h2>
                     <ul className="active-customer-list">
-    {activeCustomersThisMonth.slice(0, 4).map(cust => {
-        // NEU: Den Namen hier genauso aufteilen
-        const nameParts = cust.name.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ');
+                        {activeCustomersThisMonth.slice(0, 4).map(cust => {
+                            // NEU: Den Namen hier genauso aufteilen
+                            const nameParts = cust.name.split(' ');
+                            const firstName = nameParts[0] || '';
+                            const lastName = nameParts.slice(1).join(' ');
 
 
-        return (
-            <li key={cust.id} onClick={() => setView({ page: 'customers', subPage: 'detail', customerId: cust.id })} className="clickable">
-                {/* KORREKTUR: Die neuen Namensvariablen verwenden */}
-                <div className={`initials-avatar ${getAvatarColorClass(firstName)}`}>
-                    {getInitials(firstName, lastName)}
+                            return (
+                                <li key={cust.id} onClick={() => setView({ page: 'customers', subPage: 'detail', customerId: cust.id })} className="clickable">
+                                    {/* KORREKTUR: Die neuen Namensvariablen verwenden */}
+                                    <div className={`initials-avatar ${getAvatarColorClass(firstName)}`}>
+                                        {getInitials(firstName, lastName)}
+                                    </div>
+                                    <div className="info">
+                                        {/* KORREKTUR: Die neuen Namensvariablen verwenden */}
+                                        <div className="customer-name">{firstName} {lastName}</div>
+                                        {/* KORREKTUR: Den ersten Hund aus der Liste anzeigen */}
+                                        <div className="dog-name">{cust.dogs[0]?.name || '-'}</div>
+                                    </div>
+                                    <div className="balance">{Math.floor(cust.balance).toLocaleString('de-DE')} €</div>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 </div>
-                <div className="info">
-                    {/* KORREKTUR: Die neuen Namensvariablen verwenden */}
-                    <div className="customer-name">{firstName} {lastName}</div>
-                    {/* KORREKTUR: Den ersten Hund aus der Liste anzeigen */}
-                    <div className="dog-name">{cust.dogs[0]?.name || '-'}</div>
-                </div>
-                <div className="balance">{Math.floor(cust.balance).toLocaleString('de-DE')} €</div>
-            </li>
-        );
-    })}
-</ul>
-                 </div>
-                 <div className="content-box">
+                <div className="content-box">
                     <h2>Letzte Transaktionen</h2>
                     <ul className="transaction-list">
                         {recentTransactions.map(tx => {
@@ -826,22 +836,22 @@ const DashboardPage: FC<{
                             );
                         })}
                     </ul>
-                 </div>
+                </div>
             </div>
         </>
     );
 };
 
-const KundenPage: FC<{ 
-    customers: Customer[], 
-    transactions: Transaction[], 
-    setView: (view: View) => void, 
+const KundenPage: FC<{
+    customers: Customer[],
+    transactions: Transaction[],
+    setView: (view: View) => void,
     onKpiClick: (type: string, color: string) => void,
     onAddCustomerClick: () => void,
     currentUser: any; /* <-- DIESE ZEILE WURDE HINZUGEFÜGT */
 }> = ({ customers, transactions, setView, onKpiClick, onAddCustomerClick, currentUser }) => {
     const [filterLetter, setFilterLetter] = useState('Alle');
-    
+
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const activeCustomersCount = useMemo(() => new Set(transactions.filter(tx => new Date(tx.date) >= startOfMonth).map(tx => tx.user_id)).size, [transactions, startOfMonth]);
     const totalCredit = customers.reduce((sum, cust) => sum + cust.balance, 0);
@@ -866,17 +876,17 @@ const KundenPage: FC<{
                     <h1>Kundenverwaltung</h1>
                     <p>Verwalten Sie alle Ihre Kunden an einem Ort</p>
                 </div>
-{/* <div className="header-actions">
+                {/* <div className="header-actions">
     {currentUser.role === 'admin' && (
         <button className="button button-primary" onClick={onAddCustomerClick}>+ Neuer Kunde</button>
     )}
 </div> */}
             </header>
             <div className="kpi-grid">
-                 <KpiCard title="Kunden Gesamt" value={customers.length.toString()} icon="customers" bgIcon="customers" color="green" onClick={() => onKpiClick('allCustomers', 'green')}/>
-                 <KpiCard title="Aktiv" value={activeCustomersCount.toString()} icon="heart" bgIcon="heart" color="orange" onClick={() => onKpiClick('activeCustomersMonth', 'orange')} />
-                 <KpiCard title="Guthaben" value={`€ ${Math.floor(totalCredit).toLocaleString('de-DE')}`} icon="creditCard" bgIcon="creditCard" color="blue" onClick={() => onKpiClick('customersWithBalance', 'blue')} />
-                 <KpiCard title="Transaktionen Monat" value={transactionsMonthCount.toString()} icon="trendingUp" bgIcon="trendingUp" color="purple" onClick={() => onKpiClick('transactionsMonth', 'purple')} />
+                <KpiCard title="Kunden Gesamt" value={customers.length.toString()} icon="customers" bgIcon="customers" color="green" onClick={() => onKpiClick('allCustomers', 'green')} />
+                <KpiCard title="Aktiv" value={activeCustomersCount.toString()} icon="heart" bgIcon="heart" color="orange" onClick={() => onKpiClick('activeCustomersMonth', 'orange')} />
+                <KpiCard title="Guthaben" value={`€ ${Math.floor(totalCredit).toLocaleString('de-DE')}`} icon="creditCard" bgIcon="creditCard" color="blue" onClick={() => onKpiClick('customersWithBalance', 'blue')} />
+                <KpiCard title="Transaktionen Monat" value={transactionsMonthCount.toString()} icon="trendingUp" bgIcon="trendingUp" color="purple" onClick={() => onKpiClick('transactionsMonth', 'purple')} />
             </div>
             <div className="filter-bar">
                 {'Alle,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z'.split(',').map(letter => (
@@ -890,39 +900,39 @@ const KundenPage: FC<{
                         <tr><th>Kunde</th><th>Hund</th><th>Guthaben</th><th>Level</th><th>Erstellt</th><th></th></tr>
                     </thead>
                     <tbody>
-    {filteredCustomers.map(customer => {
-        const level = LEVELS.find(l => l.id === customer.level_id);
+                        {filteredCustomers.map(customer => {
+                            const level = LEVELS.find(l => l.id === customer.level_id);
 
-        // NEU: Teile den Namen aus dem Backend hier auf
-        const nameParts = customer.name.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ');
+                            // NEU: Teile den Namen aus dem Backend hier auf
+                            const nameParts = customer.name.split(' ');
+                            const firstName = nameParts[0] || '';
+                            const lastName = nameParts.slice(1).join(' ');
 
-        return (
-            <tr key={customer.id} onClick={() => setView({ page: 'customers', subPage: 'detail', customerId: customer.id })}>
-                <td data-label="Kunde">
-                    <div className="customer-info">
-                        {/* KORREKTUR: Verwende die neuen Namensvariablen */}
-                        <div className={`initials-avatar ${getAvatarColorClass(firstName)}`}>
-                            {getInitials(firstName, lastName)}
-                        </div>
-                        <div>
-                            {/* KORREKTUR: Zeige die neuen Namensvariablen an */}
-                            <div className="name">{firstName} {lastName}</div>
-                            <div className="id">ID: {customer.id}</div>
-                        </div>
-                    </div>
-                </td>
-                {/* ... der Rest der Tabellenzeile bleibt gleich ... */}
-                <td data-label="Hund">{customer.dogs[0]?.name || '-'}</td>
-                <td data-label="Guthaben">€ {Math.floor(customer.balance).toLocaleString('de-DE')}</td>
-                <td data-label="Level"><span className="level-badge">{level?.name}</span></td>
-                <td data-label="Erstellt">{new Date(customer.customer_since).toLocaleDateString('de-DE')}</td>
-                <td data-label="Aktion">&gt;</td>
-            </tr>
-        );
-    })}
-</tbody>
+                            return (
+                                <tr key={customer.id} onClick={() => setView({ page: 'customers', subPage: 'detail', customerId: customer.id })}>
+                                    <td data-label="Kunde">
+                                        <div className="customer-info">
+                                            {/* KORREKTUR: Verwende die neuen Namensvariablen */}
+                                            <div className={`initials-avatar ${getAvatarColorClass(firstName)}`}>
+                                                {getInitials(firstName, lastName)}
+                                            </div>
+                                            <div>
+                                                {/* KORREKTUR: Zeige die neuen Namensvariablen an */}
+                                                <div className="name">{firstName} {lastName}</div>
+                                                <div className="id">ID: {customer.id}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    {/* ... der Rest der Tabellenzeile bleibt gleich ... */}
+                                    <td data-label="Hund">{customer.dogs[0]?.name || '-'}</td>
+                                    <td data-label="Guthaben">€ {Math.floor(customer.balance).toLocaleString('de-DE')}</td>
+                                    <td data-label="Level"><span className="level-badge">{level?.name}</span></td>
+                                    <td data-label="Erstellt">{new Date(customer.customer_since).toLocaleDateString('de-DE')}</td>
+                                    <td data-label="Aktion">&gt;</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
                 </table>
             </div>
         </>
@@ -960,15 +970,15 @@ const CustomerDetailPage: FC<{
     const [isEditing, setIsEditing] = useState(false);
     // KORREKTUR: Die fehlende State-Definition für das Bearbeiten-Formular
     const [editedData, setEditedData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    dogName: '',
-    chip: '',
-    breed: '',
-    birth_date: ''
-});
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        dogName: '',
+        chip: '',
+        breed: '',
+        birth_date: ''
+    });
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [viewingDocument, setViewingDocument] = useState<DocumentFile | null>(null);
     const [deletingDocument, setDeletingDocument] = useState<DocumentFile | null>(null);
@@ -982,31 +992,31 @@ const CustomerDetailPage: FC<{
     }, []);
 
     // === HANDLER FUNKTIONEN ===
-const handleStartEditing = () => {
-    // DEBUG: Zeigt uns die Daten, mit denen die Funktion arbeitet
-    console.log("Daten für Bearbeitungsformular:", {
-        firstName: firstName,
-        lastName: lastName,
-        email: customer.email || '',
-        phone: customer.phone || '',
-        dogName: dog?.name || '',
-        chip: dog?.chip || '',
-        breed: dog?.breed || '',
-        birth_date: dog?.birth_date || ''
-    });
+    const handleStartEditing = () => {
+        // DEBUG: Zeigt uns die Daten, mit denen die Funktion arbeitet
+        console.log("Daten für Bearbeitungsformular:", {
+            firstName: firstName,
+            lastName: lastName,
+            email: customer.email || '',
+            phone: customer.phone || '',
+            dogName: dog?.name || '',
+            chip: dog?.chip || '',
+            breed: dog?.breed || '',
+            birth_date: dog?.birth_date || ''
+        });
 
-    setEditedData({
-        firstName: firstName,
-        lastName: lastName,
-        email: customer.email || '',
-        phone: customer.phone || '',
-        dogName: dog?.name || '',
-        chip: dog?.chip || '',
-        breed: dog?.breed || '',
-        birth_date: dog?.birth_date || ''
-    });
-    setIsEditing(true);
-};
+        setEditedData({
+            firstName: firstName,
+            lastName: lastName,
+            email: customer.email || '',
+            phone: customer.phone || '',
+            dogName: dog?.name || '',
+            chip: dog?.chip || '',
+            breed: dog?.breed || '',
+            birth_date: dog?.birth_date || ''
+        });
+        setIsEditing(true);
+    };
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
         setEditedData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -1014,44 +1024,44 @@ const handleStartEditing = () => {
 
     const handleCancelEdit = () => setIsEditing(false);
 
-const handleSave = () => {
-    // Stellt sicher, dass der Name korrekt zusammengefügt wird
-    const userPayload = {
-        ...customer,
-        name: `${editedData.firstName} ${editedData.lastName}`.trim(),
-        email: editedData.email,
-        phone: editedData.phone
+    const handleSave = () => {
+        // Stellt sicher, dass der Name korrekt zusammengefügt wird
+        const userPayload = {
+            ...customer,
+            name: `${editedData.firstName} ${editedData.lastName}`.trim(),
+            email: editedData.email,
+            phone: editedData.phone
+        };
+
+        let dogPayload = null;
+        if (dog) {
+            dogPayload = {
+                ...dog,
+                name: editedData.dogName,
+                chip: editedData.chip,
+                breed: editedData.breed,
+                birth_date: editedData.birth_date,
+            };
+        }
+
+        // Ruft die zentrale Speicherfunktion auf
+        onSave(userPayload, dogPayload).then(() => {
+            setIsEditing(false);
+        });
     };
 
-    let dogPayload = null;
-    if (dog) {
-        dogPayload = {
-            ...dog,
-            name: editedData.dogName,
-            chip: editedData.chip,
-            breed: editedData.breed,
-            birth_date: editedData.birth_date,
-        };
-    }
-
-    // Ruft die zentrale Speicherfunktion auf
-    onSave(userPayload, dogPayload).then(() => {
-        setIsEditing(false);
-    });
-};
-
     const handleUploadClick = () => fileInputRef.current?.click();
-const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
-        // KORREKTUR: Wandle die "live" FileList in ein stabiles Array um.
-        const filesArray = Array.from(event.target.files);
+    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files.length > 0) {
+            // KORREKTUR: Wandle die "live" FileList in ein stabiles Array um.
+            const filesArray = Array.from(event.target.files);
 
-        // Übergib jetzt das neue Array an die Upload-Funktion
-        onUploadDocuments(filesArray, String(customer.id));
+            // Übergib jetzt das neue Array an die Upload-Funktion
+            onUploadDocuments(filesArray, String(customer.id));
 
-        event.target.value = '';
-    }
-};
+            event.target.value = '';
+        }
+    };
 
     // === LOGIK FÜR LEVEL-ANZEIGE ===
     const canLevelUp = areLevelRequirementsMet(customer);
@@ -1083,7 +1093,7 @@ const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
             </li>
         );
     };
-    const LevelUpButtonComponent = ({ customerId, nextLevelId }: { customerId: string, nextLevelId: number}) => (
+    const LevelUpButtonComponent = ({ customerId, nextLevelId }: { customerId: string, nextLevelId: number }) => (
         <div className="level-up-button-container">
             <button className="button button-secondary" onClick={() => handleLevelUp(customerId, nextLevelId)}><Icon name="trendingUp" /> Ins nächste Level freischalten</button>
         </div>
@@ -1103,7 +1113,7 @@ const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
                     <p>Kundendetails & Übersicht</p>
                 </div>
                 <div className="header-actions" style={{ marginLeft: 'auto' }}>
-                    {(currentUser.role === 'admin' || currentUser.role === 'mitarbeiter') &&
+                    {(currentUser.role === 'admin' || currentUser.role === 'mitarbeiter' || currentUser.id === customer.id) &&
                         <>
                             {isEditing ? (
                                 <>
@@ -1114,19 +1124,23 @@ const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
                                 <>
                                     <button className="button button-outline" onClick={handleStartEditing}>Stammdaten</button>
                                     {currentUser.role === 'admin' && (
-                                      customer.is_vip ? (
-                                          <button className="button button-outline" onClick={() => onToggleVipStatus(customer)}>VIP-Status aberkennen</button>
-                                      ) : (
-                                          <button className="button button-secondary" onClick={() => onToggleVipStatus(customer)}>Zum VIP ernennen</button>
-                                      )
+                                        customer.is_vip ? (
+                                            <button className="button button-outline" onClick={() => onToggleVipStatus(customer)}>VIP-Status aberkennen</button>
+                                        ) : (
+                                            <button className="button button-secondary" onClick={() => onToggleVipStatus(customer)}>Zum VIP ernennen</button>
+                                        )
                                     )}
-                                    <button
-                                        className="button button-outline"
-                                        style={{borderColor: 'var(--brand-red)', color: 'var(--brand-red)'}}
-                                        onClick={() => onDeleteUserClick(customer)}>
-                                        Kunde löschen
-                                    </button>
-                                    <button className="button button-primary" onClick={() => setView({ page: 'customers', subPage: 'transactions', customerId: String(customer.id) })}>Guthaben verwalten</button>
+                                    {(currentUser.role === 'admin' || currentUser.role === 'mitarbeiter') && (
+                                        <>
+                                            <button
+                                                className="button button-outline"
+                                                style={{ borderColor: 'var(--brand-red)', color: 'var(--brand-red)' }}
+                                                onClick={() => onDeleteUserClick(customer)}>
+                                                Kunde löschen
+                                            </button>
+                                            <button className="button button-primary" onClick={() => setView({ page: 'customers', subPage: 'transactions', customerId: String(customer.id) })}>Guthaben verwalten</button>
+                                        </>
+                                    )}
                                 </>
                             )}
                         </>
@@ -1143,52 +1157,52 @@ const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
                                 {getInitials(firstName, lastName)}
                             </div>
                             <div className="personal-data-fields">
-    <div className="data-field"><Icon name="user" /><div className="field-content"><label>Vorname</label>{isEditing ? <input type="text" name="firstName" value={editedData.firstName} onChange={handleInputChange} disabled /> : <p>{firstName}</p>}</div></div>
+                                <div className="data-field"><Icon name="user" /><div className="field-content"><label>Vorname</label>{isEditing ? <input type="text" name="firstName" value={editedData.firstName} onChange={handleInputChange} disabled /> : <p>{firstName}</p>}</div></div>
                                 <div className="data-field"><Icon name="user" /><div className="field-content"><label>Nachname</label>{isEditing ? <input type="text" name="lastName" value={editedData.lastName} onChange={handleInputChange} disabled /> : <p>{lastName}</p>}</div></div>
 
-    <div className="data-field">
-        <Icon name="mail" />
-        <div className="field-content">
-            <label>E-Mail</label>
-            {isEditing ? <input type="email" name="email" value={editedData.email} onChange={handleInputChange} /> : <p>{customer.email || '-'}</p>}
-        </div>
-    </div>
-    <div className="data-field">
-        <Icon name="phone" />
-        <div className="field-content">
-            <label>Telefon</label>
-            {isEditing ? <input type="tel" name="phone" value={editedData.phone} onChange={handleInputChange} /> : <p>{customer.phone || '-'}</p>}
-        </div>
-    </div>
-    <div className="data-field">
-        <Icon name="heart" />
-        <div className="field-content">
-            <label>Hund</label>
-            {isEditing ? <input type="text" name="dogName" value={editedData.dogName} onChange={handleInputChange} /> : <p>{dogName}</p>}
-        </div>
-    </div>
-    <div className="data-field">
-        <Icon name="paw" />
-        <div className="field-content">
-            <label>Rasse</label>
-            {isEditing ? <input type="text" name="breed" value={editedData.breed} onChange={handleInputChange} /> : <p>{dog?.breed || '-'}</p>}
-        </div>
-    </div>
-    <div className="data-field">
-        <Icon name="calendar" />
-        <div className="field-content">
-            <label>Geburtstag</label>
-            {isEditing ? <input type="date" name="birth_date" value={editedData.birth_date} onChange={handleInputChange} /> : <p>{dog?.birth_date || '-'}</p>}
-        </div>
-    </div>
-    <div className="data-field">
-        <Icon name="calendar" />
-        <div className="field-content">
-            <label>Chipnummer</label>
-            {isEditing ? <input type="text" name="chip" value={editedData.chip} onChange={handleInputChange} /> : <p>{dog?.chip || '-'}</p>}
-        </div>
-    </div>
-</div>
+                                <div className="data-field">
+                                    <Icon name="mail" />
+                                    <div className="field-content">
+                                        <label>E-Mail</label>
+                                        {isEditing ? <input type="email" name="email" value={editedData.email} onChange={handleInputChange} /> : <p>{customer.email || '-'}</p>}
+                                    </div>
+                                </div>
+                                <div className="data-field">
+                                    <Icon name="phone" />
+                                    <div className="field-content">
+                                        <label>Telefon</label>
+                                        {isEditing ? <input type="tel" name="phone" value={editedData.phone} onChange={handleInputChange} /> : <p>{customer.phone || '-'}</p>}
+                                    </div>
+                                </div>
+                                <div className="data-field">
+                                    <Icon name="heart" />
+                                    <div className="field-content">
+                                        <label>Hund</label>
+                                        {isEditing ? <input type="text" name="dogName" value={editedData.dogName} onChange={handleInputChange} /> : <p>{dogName}</p>}
+                                    </div>
+                                </div>
+                                <div className="data-field">
+                                    <Icon name="paw" />
+                                    <div className="field-content">
+                                        <label>Rasse</label>
+                                        {isEditing ? <input type="text" name="breed" value={editedData.breed} onChange={handleInputChange} /> : <p>{dog?.breed || '-'}</p>}
+                                    </div>
+                                </div>
+                                <div className="data-field">
+                                    <Icon name="calendar" />
+                                    <div className="field-content">
+                                        <label>Geburtstag</label>
+                                        {isEditing ? <input type="date" name="birth_date" value={editedData.birth_date} onChange={handleInputChange} /> : <p>{dog?.birth_date || '-'}</p>}
+                                    </div>
+                                </div>
+                                <div className="data-field">
+                                    <Icon name="calendar" />
+                                    <div className="field-content">
+                                        <label>Chipnummer</label>
+                                        {isEditing ? <input type="text" name="chip" value={editedData.chip} onChange={handleInputChange} /> : <p>{dog?.chip || '-'}</p>}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1205,53 +1219,53 @@ const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
                     <div className="level-progress-container">
                         <h2>Level-Fortschritt</h2>
                         <div className="level-accordion">
-    {LEVELS.map(level => {
-        const currentLevelId = customer.level_id || 1;
-        const isActive = currentLevelId === level.id;
-        const isCompleted = currentLevelId > level.id;
-        const state = isCompleted ? 'completed' : isActive ? 'active' : 'locked';
-        const requirements = LEVEL_REQUIREMENTS[level.id] || [];
-        const canBecomeExpert = areLevelRequirementsMet(customer) && currentLevelId === 5;
-        return (
-            <React.Fragment key={level.id}>
-                <div className={`level-item state-${state}`}>
-                    <div className={`level-header header-level-${level.id}`}>
-                        <div className={`level-number level-${level.id}`}>{level.id}</div>
-                        <div className="level-title">{level.name}</div>
-                        <span className="level-status-badge">{isCompleted ? 'Abgeschlossen' : isActive ? 'Aktuell' : 'Gesperrt'}</span>
-                    </div>
+                            {LEVELS.map(level => {
+                                const currentLevelId = customer.level_id || 1;
+                                const isActive = currentLevelId === level.id;
+                                const isCompleted = currentLevelId > level.id;
+                                const state = isCompleted ? 'completed' : isActive ? 'active' : 'locked';
+                                const requirements = LEVEL_REQUIREMENTS[level.id] || [];
+                                const canBecomeExpert = areLevelRequirementsMet(customer) && currentLevelId === 5;
+                                return (
+                                    <React.Fragment key={level.id}>
+                                        <div className={`level-item state-${state}`}>
+                                            <div className={`level-header header-level-${level.id}`}>
+                                                <div className={`level-number level-${level.id}`}>{level.id}</div>
+                                                <div className="level-title">{level.name}</div>
+                                                <span className="level-status-badge">{isCompleted ? 'Abgeschlossen' : isActive ? 'Aktuell' : 'Gesperrt'}</span>
+                                            </div>
 
-                    {(isActive) && (
-                        <div className="level-content">
-                            {requirements.length > 0 ? (
-                                <ul>{requirements.map(r => renderRequirement(r, () => getProgressForLevel(customer, level.id)))}</ul>
-                            ) : (
-                                <p className="no-requirements">Keine besonderen Anforderungen in diesem Level.</p>
-                            )}
+                                            {(isActive) && (
+                                                <div className="level-content">
+                                                    {requirements.length > 0 ? (
+                                                        <ul>{requirements.map(r => renderRequirement(r, () => getProgressForLevel(customer, level.id)))}</ul>
+                                                    ) : (
+                                                        <p className="no-requirements">Keine besonderen Anforderungen in diesem Level.</p>
+                                                    )}
 
-                            {/* NEUE POSITION & LOGIK FÜR DEN EXPERTEN-BUTTON */}
-                            {/* Wird nur angezeigt, wenn es sich um Level 5 handelt */}
-                            {level.id === 5 && (canBecomeExpert || customer.is_expert) && (
-                                <div className="level-up-button-container">
-                                {customer.is_expert ? (
-                                    <button className="button button-outline button-small" onClick={() => onToggleExpertStatus(customer)}>
-                                        Experten-Status aberkennen
-                                    </button>
-                                ) : (
-                                    <button className="button button-secondary button-small" onClick={() => onToggleExpertStatus(customer)}>
-                                        Zum Experten ernennen
-                                    </button>
-                                )}
-                                </div>
-                            )}
+                                                    {/* NEUE POSITION & LOGIK FÜR DEN EXPERTEN-BUTTON */}
+                                                    {/* Wird nur angezeigt, wenn es sich um Level 5 handelt */}
+                                                    {level.id === 5 && (canBecomeExpert || customer.is_expert) && (
+                                                        <div className="level-up-button-container">
+                                                            {customer.is_expert ? (
+                                                                <button className="button button-outline button-small" onClick={() => onToggleExpertStatus(customer)}>
+                                                                    Experten-Status aberkennen
+                                                                </button>
+                                                            ) : (
+                                                                <button className="button button-secondary button-small" onClick={() => onToggleExpertStatus(customer)}>
+                                                                    Zum Experten ernennen
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {isActive && showLevelUpButton && <LevelUpButtonComponent customerId={String(customer.id)} nextLevelId={level.id + 1} />}
+                                    </React.Fragment>
+                                );
+                            })}
                         </div>
-                    )}
-                </div>
-                {isActive && showLevelUpButton && <LevelUpButtonComponent customerId={String(customer.id)} nextLevelId={level.id + 1} />}
-            </React.Fragment>
-        );
-    })}
-</div>
                     </div>
                     <div className="level-progress-container" style={{ marginTop: '1.5rem' }}>
                         <h2>Zusatz-Veranstaltungen (für Hundeführerschein)</h2>
@@ -1276,11 +1290,11 @@ const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
                     </div>
                     <div className="side-card qr-code-container">
                         <h2>QR-Code</h2>
-                            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/customer/${customer.id}`} alt="QR Code" />
+                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/customer/${customer.id}`} alt="QR Code" />
                         <p>Scannen, um diese Kundenkarte schnell aufzurufen.</p>
                     </div>
                     <div className="side-card">
-                        <h2 style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <h2 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             Dokumentenverwaltung
                             <button onClick={handleUploadClick} className="button-as-link" aria-label="Dokument hochladen">
                                 + Hochladen
@@ -1295,31 +1309,31 @@ const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
                             />
                         </h2>
                         {customerDocuments.length > 0 ? (
-                        <ul className="document-list">
-                            {customerDocuments.map((doc: any) => (
-                                <li key={doc.id}>
-                                    <Icon name="file" className="doc-icon" />
-                                    <div className="doc-info" onClick={() => {
-                                        // Erstellt eine URL, um das Dokument vom Backend zu laden
-                                        const docUrl = `${API_BASE_URL}/api/documents/${doc.id}`;
-                                        // Wir simulieren das DocumentFile-Objekt für den Viewer
-                                        setViewingDocument({ name: doc.file_name, type: doc.file_type, url: docUrl, id: doc.id, customerId: String(customer.id), file: new File([], doc.file_name), size: 0 });
-                                    }} role="button" tabIndex={0}>
-                                        {/* KORREKTUR: Verwendet Backend-Feldnamen `file_name` */}
-                                        <div className="doc-name">{doc.file_name}</div>
-                                        <div className="doc-size">{doc.file_type}</div>
-                                    </div>
-                                    <div className="doc-actions">
-                                        {/* (Share-Button bleibt gleich) */}
-                                        {/* KORREKTUR: Übergibt die ID als String */}
-                                        <button className="action-icon-btn delete" onClick={() => onDeleteDocument(doc)} aria-label="Löschen"><Icon name="trash" /></button>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                       <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>Keine Dokumente vorhanden.</p>
-                    )}
+                            <ul className="document-list">
+                                {customerDocuments.map((doc: any) => (
+                                    <li key={doc.id}>
+                                        <Icon name="file" className="doc-icon" />
+                                        <div className="doc-info" onClick={() => {
+                                            // Erstellt eine URL, um das Dokument vom Backend zu laden
+                                            const docUrl = `${API_BASE_URL}/api/documents/${doc.id}`;
+                                            // Wir simulieren das DocumentFile-Objekt für den Viewer
+                                            setViewingDocument({ name: doc.file_name, type: doc.file_type, url: docUrl, id: doc.id, customerId: String(customer.id), file: new File([], doc.file_name), size: 0 });
+                                        }} role="button" tabIndex={0}>
+                                            {/* KORREKTUR: Verwendet Backend-Feldnamen `file_name` */}
+                                            <div className="doc-name">{doc.file_name}</div>
+                                            <div className="doc-size">{doc.file_type}</div>
+                                        </div>
+                                        <div className="doc-actions">
+                                            {/* (Share-Button bleibt gleich) */}
+                                            {/* KORREKTUR: Übergibt die ID als String */}
+                                            <button className="action-icon-btn delete" onClick={() => onDeleteDocument(doc)} aria-label="Löschen"><Icon name="trash" /></button>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>Keine Dokumente vorhanden.</p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -1342,20 +1356,20 @@ const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
                 >
                     <ul className="info-modal-list">
                         {customerTransactions
-    // KORREKTUR: createdAt -> date
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .map(t => (
-        <li key={t.id}>
-            <span>
-                {/* KORREKTUR: createdAt -> date */}
-                {new Date(t.date).toLocaleDateString('de-DE')} - {t.description}
-            </span>
-            <span style={{ fontWeight: 600, color: t.amount < 0 ? 'var(--brand-red)' : 'var(--brand-green)'}}>
-                € {t.amount.toLocaleString('de-DE')}
-            </span>
-        </li>
-    ))
-}
+                            // KORREKTUR: createdAt -> date
+                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                            .map(t => (
+                                <li key={t.id}>
+                                    <span>
+                                        {/* KORREKTUR: createdAt -> date */}
+                                        {new Date(t.date).toLocaleDateString('de-DE')} - {t.description}
+                                    </span>
+                                    <span style={{ fontWeight: 600, color: t.amount < 0 ? 'var(--brand-red)' : 'var(--brand-green)' }}>
+                                        € {t.amount.toLocaleString('de-DE')}
+                                    </span>
+                                </li>
+                            ))
+                        }
                     </ul>
                 </InfoModal>
             )}
@@ -1366,37 +1380,37 @@ const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
 
 
 const TransactionManagementPage: FC<{ customer: Customer; setView: (view: View) => void, onConfirmTransaction: (tx: any) => void, currentUser: User }> = ({ customer, setView, onConfirmTransaction, currentUser }) => {
-    const [modalData, setModalData] = useState<(Omit<Transaction, 'id'|'createdAt'|'customerId'|'createdBy'> & { baseAmount?: number, bonus?: number }) | null>(null);
+    const [modalData, setModalData] = useState<(Omit<Transaction, 'id' | 'createdAt' | 'customerId' | 'createdBy'> & { baseAmount?: number, bonus?: number }) | null>(null);
 
     const [customTopup, setCustomTopup] = useState('');
     const [customDebitAmount, setCustomDebitAmount] = useState('');
     const [customDebitDesc, setCustomDebitDesc] = useState('');
 
     const topups = [
-  { title: 'Aufladung 50€', amount: 50, bonus: 5 },
-  { title: 'Aufladung 100€', amount: 100, bonus: 15 },
-  { title: 'Aufladung 150€', amount: 150, bonus: 30 },
-  { title: 'Aufladung 300€', amount: 300, bonus: 150 },
-  // Die 500€ Stufe ist entfernt
-];
+        { title: 'Aufladung 50€', amount: 50, bonus: 5 },
+        { title: 'Aufladung 100€', amount: 100, bonus: 15 },
+        { title: 'Aufladung 150€', amount: 150, bonus: 30 },
+        { title: 'Aufladung 300€', amount: 300, bonus: 150 },
+        // Die 500€ Stufe ist entfernt
+    ];
 
 
     const debits = [
-      { title: 'Gruppenstunde', amount: -15, reqId: 'group_class' },
-      { title: 'Trail', amount: -18, reqId: 'trail' },
-      { title: 'Prüfungsstunde', amount: -15, reqId: 'exam' },
-      { title: 'Social Walk', amount: -15, reqId: 'social_walk' },
-      { title: 'Wirtshaustraining', amount: -15, reqId: 'tavern_training' },
-      { title: 'Erste Hilfe Kurs', amount: -50, reqId: 'first_aid' },
-      { title: 'Vortrag Bindung & Beziehung', amount: -15, reqId: 'lecture_bonding' },
-      { title: 'Vortrag Jagdverhalten', amount: -15, reqId: 'lecture_hunting' },
-      { title: 'WS Kommunikation & Körpersprache', amount: -15, reqId: 'ws_communication' },
-      { title: 'WS Stress & Impulskontrolle', amount: -15, reqId: 'ws_stress' },
-      { title: 'Theorieabend Hundeführerschein', amount: -25, reqId: 'theory_license' },
+        { title: 'Gruppenstunde', amount: -15, reqId: 'group_class' },
+        { title: 'Trail', amount: -18, reqId: 'trail' },
+        { title: 'Prüfungsstunde', amount: -15, reqId: 'exam' },
+        { title: 'Social Walk', amount: -15, reqId: 'social_walk' },
+        { title: 'Wirtshaustraining', amount: -15, reqId: 'tavern_training' },
+        { title: 'Erste Hilfe Kurs', amount: -50, reqId: 'first_aid' },
+        { title: 'Vortrag Bindung & Beziehung', amount: -15, reqId: 'lecture_bonding' },
+        { title: 'Vortrag Jagdverhalten', amount: -15, reqId: 'lecture_hunting' },
+        { title: 'WS Kommunikation & Körpersprache', amount: -15, reqId: 'ws_communication' },
+        { title: 'WS Stress & Impulskontrolle', amount: -15, reqId: 'ws_stress' },
+        { title: 'Theorieabend Hundeführerschein', amount: -25, reqId: 'theory_license' },
     ];
 
-    const handleTxClick = (data: {title: string, amount: number, bonus?: number, reqId?: string}) => {
-         if (data.bonus !== undefined) { 
+    const handleTxClick = (data: { title: string, amount: number, bonus?: number, reqId?: string }) => {
+        if (data.bonus !== undefined) {
             const totalAmount = data.amount + data.bonus;
             setModalData({ title: data.title, amount: totalAmount, type: 'topup', baseAmount: data.amount, bonus: data.bonus });
         } else {
@@ -1412,14 +1426,10 @@ const TransactionManagementPage: FC<{ customer: Customer; setView: (view: View) 
             return;
         }
         let bonus = 0;
-        if( amount >= 300)
-            {bonus = 150}
-        else if (amount >= 150)
-            {bonus = 30}
-        else if (amount >= 100)
-            {bonus = 15}
-        else if (amount >= 50)
-            {bonus = 5}
+        if (amount >= 300) { bonus = 150 }
+        else if (amount >= 150) { bonus = 30 }
+        else if (amount >= 100) { bonus = 15 }
+        else if (amount >= 50) { bonus = 5 }
         // Für individuelle Beträge gibt es keinen Bonus
         setModalData({ title: `Individuelle Aufladung`, amount, type: 'topup', baseAmount: amount, bonus: bonus });
         setCustomTopup(''); // Feld zurücksetzen
@@ -1436,7 +1446,7 @@ const TransactionManagementPage: FC<{ customer: Customer; setView: (view: View) 
         setCustomDebitAmount(''); // Felder zurücksetzen
         setCustomDebitDesc('');
     };
-    
+
     return (
         <>
             <header className="detail-header">
@@ -1481,9 +1491,9 @@ const TransactionManagementPage: FC<{ customer: Customer; setView: (view: View) 
             </div>
 
             {/* Abbuchungen */}
-             <div className="tx-section debits">
+            <div className="tx-section debits">
                 <h3>Abbuchungen (Training & Kurse)</h3>
-                 <div className="tx-grid">
+                <div className="tx-grid">
                     {debits.map(d => (
                         <button key={d.title} className="tx-button debit" onClick={() => handleTxClick(d)} disabled={customer.balance + d.amount < 0}>
                             <div className="info"><div className="title">{d.title}</div></div>
@@ -1499,13 +1509,13 @@ const TransactionManagementPage: FC<{ customer: Customer; setView: (view: View) 
                 </div>
             </div>
 
-            {modalData && <ConfirmationModal 
-                customer={customer} 
+            {modalData && <ConfirmationModal
+                customer={customer}
                 transaction={modalData}
                 onClose={() => setModalData(null)}
                 onConfirm={() => { onConfirmTransaction(modalData); setModalData(null); }}
                 currentUser={currentUser}
-             />}
+            />}
         </>
     );
 };
@@ -1524,7 +1534,7 @@ const ConfirmationModal: FC<{
         <div className="modal-overlay">
             <div className="modal-content confirmation-modal-content">
                 <div className="modal-header green">
-                    <div style={{display: 'flex', alignItems: 'flex-start', gap: '1rem', flexGrow: 1}}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', flexGrow: 1 }}>
                         <div className="confirmation-header-icon"><Icon name="check" /></div>
                         <div className="confirmation-header-text">
                             <h2>Transaktion bestätigen</h2>
@@ -1568,7 +1578,7 @@ const ConfirmationModal: FC<{
                             <p className="description">Beschreibung: {transaction.title}</p>
                         </div>
                     )}
-                    
+
                     <div className="confirmation-box balance-box">
                         <div className="balance-col">
                             <span>Alter Saldo</span>
@@ -1679,7 +1689,7 @@ const BerichtePage: FC<{
 }> = ({ transactions, customers, users, currentUser }) => {
     const [reportType, setReportType] = useState<'monthly' | 'yearly'>('monthly');
     const [selectedMitarbeiter, setSelectedMitarbeiter] = useState<string>(
-      currentUser.role === 'admin' ? 'all' : String(currentUser.id)
+        currentUser.role === 'admin' ? 'all' : String(currentUser.id)
     );
     const [selectedPeriod, setSelectedPeriod] = useState<string>('');
 
@@ -1724,29 +1734,29 @@ const BerichtePage: FC<{
     }, [transactions, reportType, selectedPeriod, selectedMitarbeiter]);
 
     const revenue = filteredTransactions
-    .filter(t => t.amount > 0) // Aufladungen sind alle Transaktionen mit POSITIVEM Betrag
-    .reduce((sum, tx) => sum + tx.amount, 0);
+        .filter(t => t.amount > 0) // Aufladungen sind alle Transaktionen mit POSITIVEM Betrag
+        .reduce((sum, tx) => sum + tx.amount, 0);
 
-const debits = filteredTransactions
-    .filter(t => t.amount < 0) // Abbuchungen sind alle Transaktionen mit NEGATIVEM Betrag
-    .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+    const debits = filteredTransactions
+        .filter(t => t.amount < 0) // Abbuchungen sind alle Transaktionen mit NEGATIVEM Betrag
+        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
-const topCustomers = useMemo(() => {
-    const customerSpending: {[key: string]: {customer: any, count: number, total: number}} = {};
+    const topCustomers = useMemo(() => {
+        const customerSpending: { [key: string]: { customer: any, count: number, total: number } } = {};
 
-    // Filtert jetzt ebenfalls nach negativem Betrag, um die Ausgaben zu finden
-    filteredTransactions.filter(tx => tx.amount < 0).forEach(tx => {
-        const cust = customers.find(c => c.id === tx.user_id);
-        if (!cust) return;
-        const key = cust.id;
-        if (!customerSpending[key]) customerSpending[key] = { customer: cust, count: 0, total: 0 };
-        customerSpending[key].count++;
-        customerSpending[key].total += Math.abs(tx.amount);
-    });
+        // Filtert jetzt ebenfalls nach negativem Betrag, um die Ausgaben zu finden
+        filteredTransactions.filter(tx => tx.amount < 0).forEach(tx => {
+            const cust = customers.find(c => c.id === tx.user_id);
+            if (!cust) return;
+            const key = cust.id;
+            if (!customerSpending[key]) customerSpending[key] = { customer: cust, count: 0, total: 0 };
+            customerSpending[key].count++;
+            customerSpending[key].total += Math.abs(tx.amount);
+        });
 
-    return Object.values(customerSpending).sort((a, b) => b.total - a.total).slice(0, 5);
-}, [filteredTransactions, customers]);
-    
+        return Object.values(customerSpending).sort((a, b) => b.total - a.total).slice(0, 5);
+    }, [filteredTransactions, customers]);
+
     const formatPeriodForDisplay = (period: string, type: 'monthly' | 'yearly') => {
         if (!period) return '';
         if (type === 'yearly') return period;
@@ -1783,7 +1793,7 @@ const topCustomers = useMemo(() => {
     const handleExportPDF = () => {
         const reportTitle = `Bericht für ${formatPeriodForDisplay(selectedPeriod, reportType)}`;
         const mitarbeiter = selectedMitarbeiter === 'all' ? 'Alle Mitarbeiter' : users.find(u => u.id === selectedMitarbeiter)?.name;
-        
+
         let tableRows = filteredTransactions.map(tx => {
             // KORREKTUR: Die richtigen IDs verwenden
             const customer = customers.find(c => c.id === tx.user_id);
@@ -1864,7 +1874,7 @@ const topCustomers = useMemo(() => {
                 <h1>Berichte & Statistiken</h1>
                 <p>Analysieren und exportieren Sie Ihre Geschäftsdaten</p>
             </header>
-            
+
             <div className="content-box filter-export-panel">
                 <div className="filter-controls">
                     <div className="filter-group">
@@ -1915,9 +1925,9 @@ const topCustomers = useMemo(() => {
                 <div className="content-box">
                     <h2>Transaktionen im Zeitraum ({filteredTransactions.length})</h2>
                     <ul className="detailed-transaction-list">
-                         {filteredTransactions.length > 0 ? filteredTransactions.map(tx => {
-                            const customer = customers.find(c => c.id === tx.customerId);
-                            const creator = users.find(u => u.id === tx.createdBy);
+                        {filteredTransactions.length > 0 ? filteredTransactions.map(tx => {
+                            const customer = customers.find(c => c.id === tx.user_id);
+                            const creator = users.find(u => u.id === tx.booked_by_id);
                             return (
                                 <li key={tx.id}>
                                     <div className={`tx-icon ${tx.amount < 0 ? 'debit' : 'topup'}`}>
@@ -1925,7 +1935,7 @@ const topCustomers = useMemo(() => {
                                     </div>
                                     <div className="tx-details">
                                         <div className="tx-line-1">
-                                            <span className="tx-title">{tx.title}</span>
+                                            <span className="tx-title">{tx.description}</span>
                                             <span className="tx-customer">für {customer?.name}</span>
                                         </div>
                                         <div className="tx-line-2">
@@ -1938,33 +1948,33 @@ const topCustomers = useMemo(() => {
                                     </div>
                                 </li>
                             );
-                        }) : <p style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0'}}>Keine Transaktionen für den gewählten Filter.</p>}
+                        }) : <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0' }}>Keine Transaktionen für den gewählten Filter.</p>}
                     </ul>
                 </div>
                 <div className="content-box">
                     <h2>Top Kunden im Zeitraum</h2>
-                     <ul className="top-customer-list">
-                       {topCustomers.length > 0 ? topCustomers.map((custData, index) => {
-    // HIER KOMMT DIE KORREKTUR:
-    const nameParts = custData.customer.name.split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ');
-    const dogName = custData.customer.dogs[0]?.name || '-';
+                    <ul className="top-customer-list">
+                        {topCustomers.length > 0 ? topCustomers.map((custData, index) => {
+                            // HIER KOMMT DIE KORREKTUR:
+                            const nameParts = custData.customer.name.split(' ');
+                            const firstName = nameParts[0] || '';
+                            const lastName = nameParts.slice(1).join(' ');
+                            const dogName = custData.customer.dogs[0]?.name || '-';
 
-    return (
-        <li key={custData.customer.id}>
-            <div className="rank">{index + 1}</div>
-            <div className={`initials-avatar ${getAvatarColorClass(firstName)}`}>
-                {getInitials(firstName, lastName)}
-            </div>
-            <div className="info">
-                <div className="name">{custData.customer.name}</div>
-                <div className="tx-count">{dogName} &bull; {custData.count} Transaktionen</div>
-            </div>
-            <div className="amount">€ {Math.floor(custData.total).toLocaleString('de-DE')}</div>
-        </li>
-    );
-}) : <p style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0'}}>Keine Kundendaten für den gewählten Filter.</p>}
+                            return (
+                                <li key={custData.customer.id}>
+                                    <div className="rank">{index + 1}</div>
+                                    <div className={`initials-avatar ${getAvatarColorClass(firstName)}`}>
+                                        {getInitials(firstName, lastName)}
+                                    </div>
+                                    <div className="info">
+                                        <div className="name">{custData.customer.name}</div>
+                                        <div className="tx-count">{dogName} &bull; {custData.count} Transaktionen</div>
+                                    </div>
+                                    <div className="amount">€ {Math.floor(custData.total).toLocaleString('de-DE')}</div>
+                                </li>
+                            );
+                        }) : <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0' }}>Keine Kundendaten für den gewählten Filter.</p>}
                     </ul>
                 </div>
             </div>
@@ -2102,25 +2112,25 @@ const CustomerTransactionsPage: FC<{ transactions: any[] }> = ({ transactions })
                         transactions
                             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                             .map(tx => (
-                            <li key={tx.id}>
-                                <div className={`tx-icon ${tx.amount < 0 ? 'debit' : 'topup'}`}>
-                                    <Icon name={tx.amount < 0 ? 'arrowDown' : 'trendingUp'} />
-                                </div>
-                                <div className="tx-details">
-                                    <div className="tx-line-1">
-                                        <span className="tx-title">{tx.description}</span>
+                                <li key={tx.id}>
+                                    <div className={`tx-icon ${tx.amount < 0 ? 'debit' : 'topup'}`}>
+                                        <Icon name={tx.amount < 0 ? 'arrowDown' : 'trendingUp'} />
                                     </div>
-                                    <div className="tx-line-2">
-                                        <span>{new Date(tx.date).toLocaleDateString('de-DE', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                    <div className="tx-details">
+                                        <div className="tx-line-1">
+                                            <span className="tx-title">{tx.description}</span>
+                                        </div>
+                                        <div className="tx-line-2">
+                                            <span>{new Date(tx.date).toLocaleDateString('de-DE', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className={`tx-amount ${tx.amount < 0 ? 'debit' : 'topup'}`}>
-                                    {tx.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
-                                </div>
-                            </li>
-                        ))
+                                    <div className={`tx-amount ${tx.amount < 0 ? 'debit' : 'topup'}`}>
+                                        {tx.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                                    </div>
+                                </li>
+                            ))
                     ) : (
-                        <p style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0'}}>
+                        <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0' }}>
                             Sie haben noch keine Transaktionen.
                         </p>
                     )}
@@ -2136,7 +2146,7 @@ const BenutzerPage: FC<{
     onEditUserClick: (user: User) => void;
     onDeleteUserClick: (user: User) => void;
 }> = ({ users, onAddUserClick, onEditUserClick, onDeleteUserClick }) => {
-    
+
     const systemUsers = users.filter(u => u.role !== 'kunde');
 
     return (
@@ -2146,52 +2156,52 @@ const BenutzerPage: FC<{
                     <h1>Benutzerverwaltung</h1>
                     <p>Verwalten Sie alle Systembenutzer an einem Ort</p>
                 </div>
-<div className="header-actions">
-<button className="button button-primary" onClick={onAddUserClick}>+ Neuer Benutzer</button>
+                <div className="header-actions">
+                    <button className="button button-primary" onClick={onAddUserClick}>+ Neuer Benutzer</button>
 
-</div>
+                </div>
             </header>
             <div className="content-box user-list">
                 <h2>Systembenutzer ({systemUsers.length})</h2>
                 <div className="table-container">
-                     <table>
+                    <table>
                         <thead>
                             <tr><th>Benutzer</th><th>E-Mail</th><th>Rolle</th><th>Erstellt</th><th>Aktionen</th></tr>
                         </thead>
                         <tbody>
-   {systemUsers.map(user => {
-       // KORREKTUR: Namen für jede Zeile neu aufteilen
-       const nameParts = user.name ? user.name.split(' ') : [''];
-       const firstName = nameParts[0];
-       const lastName = nameParts.slice(1).join(' ');
+                            {systemUsers.map(user => {
+                                // KORREKTUR: Namen für jede Zeile neu aufteilen
+                                const nameParts = user.name ? user.name.split(' ') : [''];
+                                const firstName = nameParts[0];
+                                const lastName = nameParts.slice(1).join(' ');
 
-       return (
-           <tr key={user.id}>
-               <td data-label="Benutzer">
-                   <div className="user-cell">
-                        <div className={`initials-avatar ${getAvatarColorClass(firstName)}`}>
-                            {getInitials(firstName, lastName)}
-                        </div>
-                        <div>
-                            {/* KORREKTUR: Aufgeteilte Namen in den divs verwenden */}
-                            <div className="user-fullname">{firstName}</div>
-                            <div className="user-subname">{lastName}</div>
-                        </div>
-                   </div>
-               </td>
-               <td data-label="E-Mail">{user.email}</td>
-               <td data-label="Rolle"><span className={`role-badge ${user.role}`}>{user.role}</span></td>
-               <td data-label="Erstellt">{new Date(user.customer_since).toLocaleDateString('de-DE')}</td>
-               <td data-label="Aktionen">
-                    <div className="actions-cell-wrapper">
-                       <button className="action-icon-btn" onClick={() => onEditUserClick(user)} aria-label="Bearbeiten"><Icon name="edit" /></button>
-                       <button className="action-icon-btn delete" onClick={() => onDeleteUserClick(user)} aria-label="Löschen"><Icon name="trash" /></button>
-                    </div>
-               </td>
-           </tr>
-       );
-   })}
-</tbody>
+                                return (
+                                    <tr key={user.id}>
+                                        <td data-label="Benutzer">
+                                            <div className="user-cell">
+                                                <div className={`initials-avatar ${getAvatarColorClass(firstName)}`}>
+                                                    {getInitials(firstName, lastName)}
+                                                </div>
+                                                <div>
+                                                    {/* KORREKTUR: Aufgeteilte Namen in den divs verwenden */}
+                                                    <div className="user-fullname">{firstName}</div>
+                                                    <div className="user-subname">{lastName}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td data-label="E-Mail">{user.email}</td>
+                                        <td data-label="Rolle"><span className={`role-badge ${user.role}`}>{user.role}</span></td>
+                                        <td data-label="Erstellt">{new Date(user.customer_since).toLocaleDateString('de-DE')}</td>
+                                        <td data-label="Aktionen">
+                                            <div className="actions-cell-wrapper">
+                                                <button className="action-icon-btn" onClick={() => onEditUserClick(user)} aria-label="Bearbeiten"><Icon name="edit" /></button>
+                                                <button className="action-icon-btn delete" onClick={() => onDeleteUserClick(user)} aria-label="Löschen"><Icon name="trash" /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -2203,230 +2213,230 @@ const BenutzerPage: FC<{
 
 // --- HAUPT-APP ---
 const App: FC = () => {
-  const [loggedInUser, setLoggedInUser] = useState<any | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(localStorage.getItem('authToken'));
-  const [view, setView] = useState<View>({ page: 'dashboard' });
-  const [customers, setCustomers] = useState<any[]>([]); // auf any[] ändern für Backend-Daten
-  const [users, setUsers] = useState<any[]>([]); // auf any[] ändern
-  const [transactions, setTransactions] = useState<any[]>([]); // auf any[] ändern
-  const [isLoading, setIsLoading] = useState(true); // Neuer Lade-Zustand
+    const [loggedInUser, setLoggedInUser] = useState<any | null>(null);
+    const [authToken, setAuthToken] = useState<string | null>(localStorage.getItem('authToken'));
+    const [view, setView] = useState<View>({ page: 'dashboard' });
+    const [customers, setCustomers] = useState<any[]>([]); // auf any[] ändern für Backend-Daten
+    const [users, setUsers] = useState<any[]>([]); // auf any[] ändern
+    const [transactions, setTransactions] = useState<any[]>([]); // auf any[] ändern
+    const [isLoading, setIsLoading] = useState(true); // Neuer Lade-Zustand
 
-  const [modal, setModal] = useState<{ isOpen: boolean; title: string; content: React.ReactNode; color: string; }>({ isOpen: false, title: '', content: null, color: 'green' });
-  const [addCustomerModalOpen, setAddCustomerModalOpen] = useState(false);
-  
-  // Sidebar State
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 992);
-  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 992);
+    const [modal, setModal] = useState<{ isOpen: boolean; title: string; content: React.ReactNode; color: string; }>({ isOpen: false, title: '', content: null, color: 'green' });
+    const [addCustomerModalOpen, setAddCustomerModalOpen] = useState(false);
 
-  // User Management Modals State
-  const [userModal, setUserModal] = useState<{isOpen: boolean; user: User | null}>({isOpen: false, user: null});
-  const [deleteUserModal, setDeleteUserModal] = useState<User | null>(null);
+    // Sidebar State
+    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 992);
+    const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 992);
 
-  const [deletingDocument, setDeletingDocument] = useState<any | null>(null);
-  const [dogFormModal, setDogFormModal] = useState<{ isOpen: boolean; dog: any | null }>({ isOpen: false, dog: null }); // <-- NEU
-  const [deletingDog, setDeletingDog] = useState<any | null>(null); // <-- NEU
+    // User Management Modals State
+    const [userModal, setUserModal] = useState<{ isOpen: boolean; user: User | null }>({ isOpen: false, user: null });
+    const [deleteUserModal, setDeleteUserModal] = useState<User | null>(null);
 
-  const [isServerLoading, setServerLoading] = useState<{ active: boolean; message: string }>({ active: false, message: '' });
-  const [customerPage, setCustomerPage] = useState<'overview' | 'transactions'>('overview');
- const [directAccessedCustomer, setDirectAccessedCustomer] = useState<any | null>(null);
-  useEffect(() => {
-    const handleResize = () => {
-        const isMobile = window.innerWidth <= 992;
-        setIsMobileView(isMobile);
-        if (!isMobile) {
-            setIsSidebarOpen(true); // Always open on desktop
-        }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    const [deletingDocument, setDeletingDocument] = useState<any | null>(null);
+    const [dogFormModal, setDogFormModal] = useState<{ isOpen: boolean; dog: any | null }>({ isOpen: false, dog: null }); // <-- NEU
+    const [deletingDog, setDeletingDog] = useState<any | null>(null); // <-- NEU
 
-  useEffect(() => {
-    // Diese Logik wird ausgeführt, wenn die App lädt oder der Nutzer sich einloggt.
-    if (loggedInUser && loggedInUser.role !== 'kunde') {
-        const path = window.location.pathname;
-        const match = path.match(/customer\/(\d+)/); // Passt auf URLs wie /customer/123
-
-        // Wenn eine Kunden-ID in der URL gefunden wird (durch QR-Scan)
-        if (match && match[1]) {
-            const customerId = parseInt(match[1]);
-
-            // Lade den Kunden direkt vom Server, um das Portfolio zu umgehen
-            setServerLoading({ active: true, message: 'Lade Kundendaten...' });
-            apiClient.get(`/api/users/${customerId}`, authToken)
-                .then(customerData => {
-                    setDirectAccessedCustomer(customerData); // Speichere den Kunden in unserem neuen State
-                    setView({ page: 'customers', subPage: 'detail', customerId: String(customerId) });
-                })
-                .catch(err => {
-                    console.error("Fehler beim Laden des Kunden via QR-Code:", err);
-                    alert("Kunde konnte nicht gefunden oder geladen werden.");
-                    window.history.pushState({}, '', '/'); // URL zurücksetzen
-                })
-                .finally(() => {
-                    setServerLoading({ active: false, message: '' });
-                });
-        }
-    }
-  }, [loggedInUser]); // Abhängig vom Login-Status
-
- const handleSetView = (newView: View) => {
-    // Wenn wir von einer Detailansicht (Kunde oder Transaktion) wegnavigieren...
-    if (view.customerId && newView.customerId !== view.customerId) {
-      setDirectAccessedCustomer(null);
-      // Bereinigt die URL in der Adressleiste des Browsers ohne Neuladen.
-      window.history.pushState({}, '', '/');
-    }
-    setView(newView);
-  };
-
-const fetchAppData = async () => {
-    if (!authToken) {
-        setIsLoading(false);
-        return;
-    }
-    setIsLoading(true);
-    try {
-        const currentUser = await apiClient.get('/api/users/me', authToken);
-        setLoggedInUser(currentUser);
-
-        if (currentUser.role === 'kunde') {
-            // Ein Kunde holt NUR seine eigenen Transaktionen.
-            // Der Aufruf von /api/users wird bewusst ausgelassen, um einen 403-Fehler zu vermeiden.
-            const transactionsResponse = await apiClient.get('/api/transactions', authToken);
-            setTransactions(transactionsResponse);
-            setCustomers([currentUser]);
-            setUsers([currentUser]);
-        } else {
-            // Admins und Mitarbeiter laden alles wie bisher.
-            const [usersResponse, transactionsResponse] = await Promise.all([
-                apiClient.get('/api/users', authToken),
-                apiClient.get('/api/transactions', authToken)
-            ]);
-            setCustomers(usersResponse.filter((user: any) => user.role === 'kunde'));
-            setUsers(usersResponse);
-            setTransactions(transactionsResponse);
-        }
-
-    } catch (error) {
-        console.error("Authentifizierung oder Datenabruf fehlgeschlagen, logge aus:", error);
-        handleLogout();
-    } finally {
-        setIsLoading(false);
-    }
-};
-
-// Der useEffect-Hook ruft jetzt nur noch diese eine Funktion auf
-useEffect(() => {
-    fetchAppData(); // initializeApp wurde zu fetchAppData umbenannt, also hier anpassen
-}, [authToken]);
-
-  // Funktion, die beim Login aufgerufen wird
-  const handleLoginSuccess = (token: string, user: any) => {
-    localStorage.setItem('authToken', token); // Token im localStorage speichern
-    setAuthToken(token);
-    setLoggedInUser(user);
-    setServerLoading({ active: false, message: '' });
-  };
-
-  // Funktion zum Ausloggen
-const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    setAuthToken(null);
-    setLoggedInUser(null);
-    setDirectAccessedCustomer(null);
-    window.history.pushState({}, '', '/');
-  };
-
-  const handleUpdateStatus = async (userId: string, statusType: 'vip' | 'expert', value: boolean) => {
-    if (!authToken) return;
-    try {
-      if (statusType === 'vip') {
-        await apiClient.setVipStatus(userId, value, authToken);
-      } else {
-        await apiClient.setExpertStatus(userId, value, authToken);
-      }
-      await fetchAppData();
-    } catch (error) {
-      console.error(`Fehler beim Aktualisieren des ${statusType}-Status:`, error);
-      alert(`Fehler: ${error}`);
-    }
-  };
-
-// In der App-Komponente in frontend/index.tsx
-
-  const handleConfirmTransaction = async (txData: {
-      title: string;
-      amount: number; // Dies ist der Betrag, der verbucht wird (z.B. -12 für Abbuchung)
-      type: 'topup' | 'debit';
-      meta?: { requirementId?: string };
-      baseAmount?: number; // Dies ist der reine Aufladebetrag (z.B. 100)
-  }) => {
-      if (!view.customerId || !authToken) return;
-
-      // Das Datenobjekt, das wir an das Backend senden.
-      // Es muss dem "TransactionCreate"-Schema aus `schemas.py` entsprechen.
-      const transactionPayload = {
-          user_id: parseInt(view.customerId.replace('cust-', ''), 10), // Backend erwartet eine Zahl, z.B. 1 statt "cust-1"
-          type: txData.type === 'topup' ? 'Aufladung' : txData.title, // Backend-Typen anpassen
-          description: txData.title,
-          amount: txData.baseAmount || txData.amount, // Bei Aufladung nur den Basisbetrag senden
-          requirement_id: txData.meta?.requirementId || null
-      };
-
-      try {
-          // Sende die Daten an das Backend
-          await apiClient.post('/api/transactions', transactionPayload, authToken);
-
-          // Einfachste Methode, um die UI zu aktualisieren: die Seite neu laden.
-          // So werden die neuen Kontostände und Transaktionslisten vom Server geholt.
-          console.log('Transaktion erfolgreich gebucht!');
-          await fetchAppData();
-      } catch (error) {
-          console.error("Fehler beim Buchen der Transaktion:", error);
-          alert(`Fehler: ${error}`);
-      }
-  };
-
-  const handleAddCustomer = async (newCustomerData: any) => {
-    if (!loggedInUser) return;
-
-    // 1. Daten für das Backend-Schema "UserCreate" vorbereiten
-    const payload = {
-        name: `${newCustomerData.firstName} ${newCustomerData.lastName}`.trim(),
-        email: newCustomerData.email,
-        role: "kunde",
-        is_active: true,
-        balance: 0.0,
-        phone: newCustomerData.phone,
-        dogs: [ // Das Backend kann direkt einen Hund mit anlegen
-            {
-                name: newCustomerData.dogName,
-                breed: newCustomerData.dogBreed || null,
-                birth_date: newCustomerData.dogBirthDate || null,
-                chip: newCustomerData.chip || null
+    const [isServerLoading, setServerLoading] = useState<{ active: boolean; message: string }>({ active: false, message: '' });
+    const [customerPage, setCustomerPage] = useState<'overview' | 'transactions'>('overview');
+    const [directAccessedCustomer, setDirectAccessedCustomer] = useState<any | null>(null);
+    useEffect(() => {
+        const handleResize = () => {
+            const isMobile = window.innerWidth <= 992;
+            setIsMobileView(isMobile);
+            if (!isMobile) {
+                setIsSidebarOpen(true); // Always open on desktop
             }
-        ]
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        // Diese Logik wird ausgeführt, wenn die App lädt oder der Nutzer sich einloggt.
+        if (loggedInUser && loggedInUser.role !== 'kunde') {
+            const path = window.location.pathname;
+            const match = path.match(/customer\/(\d+)/); // Passt auf URLs wie /customer/123
+
+            // Wenn eine Kunden-ID in der URL gefunden wird (durch QR-Scan)
+            if (match && match[1]) {
+                const customerId = parseInt(match[1]);
+
+                // Lade den Kunden direkt vom Server, um das Portfolio zu umgehen
+                setServerLoading({ active: true, message: 'Lade Kundendaten...' });
+                apiClient.get(`/api/users/${customerId}`, authToken)
+                    .then(customerData => {
+                        setDirectAccessedCustomer(customerData); // Speichere den Kunden in unserem neuen State
+                        setView({ page: 'customers', subPage: 'detail', customerId: String(customerId) });
+                    })
+                    .catch(err => {
+                        console.error("Fehler beim Laden des Kunden via QR-Code:", err);
+                        alert("Kunde konnte nicht gefunden oder geladen werden.");
+                        window.history.pushState({}, '', '/'); // URL zurücksetzen
+                    })
+                    .finally(() => {
+                        setServerLoading({ active: false, message: '' });
+                    });
+            }
+        }
+    }, [loggedInUser]); // Abhängig vom Login-Status
+
+    const handleSetView = (newView: View) => {
+        // Wenn wir von einer Detailansicht (Kunde oder Transaktion) wegnavigieren...
+        if (view.customerId && newView.customerId !== view.customerId) {
+            setDirectAccessedCustomer(null);
+            // Bereinigt die URL in der Adressleiste des Browsers ohne Neuladen.
+            window.history.pushState({}, '', '/');
+        }
+        setView(newView);
     };
 
-    try {
-        // 2. API-Aufruf zum Erstellen des neuen Benutzers
-        await apiClient.post('/api/users', payload, authToken);
+    const fetchAppData = async () => {
+        if (!authToken) {
+            setIsLoading(false);
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const currentUser = await apiClient.get('/api/users/me', authToken);
+            setLoggedInUser(currentUser);
 
-        // 3. App-Daten neu laden, um den neuen Kunden in der Liste anzuzeigen
-        await fetchAppData();
-        console.log('Kunde erfolgreich angelegt!');
+            if (currentUser.role === 'kunde') {
+                // Ein Kunde holt NUR seine eigenen Transaktionen.
+                // Der Aufruf von /api/users wird bewusst ausgelassen, um einen 403-Fehler zu vermeiden.
+                const transactionsResponse = await apiClient.get('/api/transactions', authToken);
+                setTransactions(transactionsResponse);
+                setCustomers([currentUser]);
+                setUsers([currentUser]);
+            } else {
+                // Admins und Mitarbeiter laden alles wie bisher.
+                const [usersResponse, transactionsResponse] = await Promise.all([
+                    apiClient.get('/api/users', authToken),
+                    apiClient.get('/api/transactions', authToken)
+                ]);
+                setCustomers(usersResponse.filter((user: any) => user.role === 'kunde'));
+                setUsers(usersResponse);
+                setTransactions(transactionsResponse);
+            }
 
-    } catch (error) {
-        console.error("Fehler beim Anlegen des Kunden:", error);
-        alert(`Fehler: ${error}`);
-    }
-};
+        } catch (error) {
+            console.error("Authentifizierung oder Datenabruf fehlgeschlagen, logge aus:", error);
+            handleLogout();
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  const handleUpdateCustomer = (updatedCustomer: Customer) => {
-    setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
-  };
-  
+    // Der useEffect-Hook ruft jetzt nur noch diese eine Funktion auf
+    useEffect(() => {
+        fetchAppData(); // initializeApp wurde zu fetchAppData umbenannt, also hier anpassen
+    }, [authToken]);
+
+    // Funktion, die beim Login aufgerufen wird
+    const handleLoginSuccess = (token: string, user: any) => {
+        localStorage.setItem('authToken', token); // Token im localStorage speichern
+        setAuthToken(token);
+        setLoggedInUser(user);
+        setServerLoading({ active: false, message: '' });
+    };
+
+    // Funktion zum Ausloggen
+    const handleLogout = () => {
+        localStorage.removeItem('authToken');
+        setAuthToken(null);
+        setLoggedInUser(null);
+        setDirectAccessedCustomer(null);
+        window.history.pushState({}, '', '/');
+    };
+
+    const handleUpdateStatus = async (userId: string, statusType: 'vip' | 'expert', value: boolean) => {
+        if (!authToken) return;
+        try {
+            if (statusType === 'vip') {
+                await apiClient.setVipStatus(userId, value, authToken);
+            } else {
+                await apiClient.setExpertStatus(userId, value, authToken);
+            }
+            await fetchAppData();
+        } catch (error) {
+            console.error(`Fehler beim Aktualisieren des ${statusType}-Status:`, error);
+            alert(`Fehler: ${error}`);
+        }
+    };
+
+    // In der App-Komponente in frontend/index.tsx
+
+    const handleConfirmTransaction = async (txData: {
+        title: string;
+        amount: number; // Dies ist der Betrag, der verbucht wird (z.B. -12 für Abbuchung)
+        type: 'topup' | 'debit';
+        meta?: { requirementId?: string };
+        baseAmount?: number; // Dies ist der reine Aufladebetrag (z.B. 100)
+    }) => {
+        if (!view.customerId || !authToken) return;
+
+        // Das Datenobjekt, das wir an das Backend senden.
+        // Es muss dem "TransactionCreate"-Schema aus `schemas.py` entsprechen.
+        const transactionPayload = {
+            user_id: parseInt(view.customerId.replace('cust-', ''), 10), // Backend erwartet eine Zahl, z.B. 1 statt "cust-1"
+            type: txData.type === 'topup' ? 'Aufladung' : txData.title, // Backend-Typen anpassen
+            description: txData.title,
+            amount: txData.baseAmount || txData.amount, // Bei Aufladung nur den Basisbetrag senden
+            requirement_id: txData.meta?.requirementId || null
+        };
+
+        try {
+            // Sende die Daten an das Backend
+            await apiClient.post('/api/transactions', transactionPayload, authToken);
+
+            // Einfachste Methode, um die UI zu aktualisieren: die Seite neu laden.
+            // So werden die neuen Kontostände und Transaktionslisten vom Server geholt.
+            console.log('Transaktion erfolgreich gebucht!');
+            await fetchAppData();
+        } catch (error) {
+            console.error("Fehler beim Buchen der Transaktion:", error);
+            alert(`Fehler: ${error}`);
+        }
+    };
+
+    const handleAddCustomer = async (newCustomerData: any) => {
+        if (!loggedInUser) return;
+
+        // 1. Daten für das Backend-Schema "UserCreate" vorbereiten
+        const payload = {
+            name: `${newCustomerData.firstName} ${newCustomerData.lastName}`.trim(),
+            email: newCustomerData.email,
+            role: "kunde",
+            is_active: true,
+            balance: 0.0,
+            phone: newCustomerData.phone,
+            dogs: [ // Das Backend kann direkt einen Hund mit anlegen
+                {
+                    name: newCustomerData.dogName,
+                    breed: newCustomerData.dogBreed || null,
+                    birth_date: newCustomerData.dogBirthDate || null,
+                    chip: newCustomerData.chip || null
+                }
+            ]
+        };
+
+        try {
+            // 2. API-Aufruf zum Erstellen des neuen Benutzers
+            await apiClient.post('/api/users', payload, authToken);
+
+            // 3. App-Daten neu laden, um den neuen Kunden in der Liste anzuzeigen
+            await fetchAppData();
+            console.log('Kunde erfolgreich angelegt!');
+
+        } catch (error) {
+            console.error("Fehler beim Anlegen des Kunden:", error);
+            alert(`Fehler: ${error}`);
+        }
+    };
+
+    const handleUpdateCustomer = (updatedCustomer: Customer) => {
+        setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
+    };
+
     // In der App-Komponente in frontend/index.tsx
 
     const handleLevelUp = async (customerId: string, newLevelId: number) => {
@@ -2440,460 +2450,460 @@ const handleLogout = () => {
         }
     };
 
-  const onToggleVipStatus = async (customer: any) => {
-    const newStatus = !customer.is_vip;
-    // Sende immer beide Werte, um den anderen Status zurückzusetzen
-    const payload = { is_vip: newStatus, is_expert: false };
-    try {
-        await apiClient.put(`/api/users/${customer.id}/status`, payload, authToken);
-        await fetchAppData();
-        console.log(`VIP Status für ${customer.name} auf ${newStatus} gesetzt.`);
-    } catch (error) {
-        console.error("Fehler beim Ändern des VIP Status:", error);
-    }
-};
+    const onToggleVipStatus = async (customer: any) => {
+        const newStatus = !customer.is_vip;
+        // Sende immer beide Werte, um den anderen Status zurückzusetzen
+        const payload = { is_vip: newStatus, is_expert: false };
+        try {
+            await apiClient.put(`/api/users/${customer.id}/status`, payload, authToken);
+            await fetchAppData();
+            console.log(`VIP Status für ${customer.name} auf ${newStatus} gesetzt.`);
+        } catch (error) {
+            console.error("Fehler beim Ändern des VIP Status:", error);
+        }
+    };
 
-// Umbenannt zu "onToggleExpertStatus"
-const onToggleExpertStatus = async (customer: any) => {
-    const newStatus = !customer.is_expert;
-    // Sende immer beide Werte, um den anderen Status zurückzusetzen
-    const payload = { is_expert: newStatus, is_vip: false };
-    try {
-        await apiClient.put(`/api/users/${customer.id}/status`, payload, authToken);
-        await fetchAppData();
-        console.log(`Experten-Status für ${customer.name} auf ${newStatus} gesetzt.`);
-    } catch (error) {
-        console.error("Fehler beim Ändern des Experten-Status:", error);
-    }
-};
-const handleSaveUser = async (userData: any) => {
-    if (userModal.user) { // Bearbeiten eines bestehenden Benutzers
-      try {
-        await apiClient.put(`/api/users/${userModal.user.id}`, userData, authToken);
-        await fetchAppData();
-        console.log('Benutzer erfolgreich aktualisiert!');
-      } catch (error) {
-        console.error("Fehler beim Aktualisieren des Benutzers:", error);
-        alert(`Fehler: ${error}`);
-      }
-    } else { // Hinzufügen eines neuen Benutzers
-      try {
-        // Das userData-Objekt enthält jetzt das Passwort aus dem Formular
-        await apiClient.post('/api/users', userData, authToken);
-        await fetchAppData();
-        console.log('Benutzer erfolgreich angelegt!');
-      } catch (error) {
-        console.error("Fehler beim Anlegen des Benutzers:", error);
-        alert(`Fehler: ${error}`);
-      }
-    }
-    setUserModal({ isOpen: false, user: null });
-  };
+    // Umbenannt zu "onToggleExpertStatus"
+    const onToggleExpertStatus = async (customer: any) => {
+        const newStatus = !customer.is_expert;
+        // Sende immer beide Werte, um den anderen Status zurückzusetzen
+        const payload = { is_expert: newStatus, is_vip: false };
+        try {
+            await apiClient.put(`/api/users/${customer.id}/status`, payload, authToken);
+            await fetchAppData();
+            console.log(`Experten-Status für ${customer.name} auf ${newStatus} gesetzt.`);
+        } catch (error) {
+            console.error("Fehler beim Ändern des Experten-Status:", error);
+        }
+    };
+    const handleSaveUser = async (userData: any) => {
+        if (userModal.user) { // Bearbeiten eines bestehenden Benutzers
+            try {
+                await apiClient.put(`/api/users/${userModal.user.id}`, userData, authToken);
+                await fetchAppData();
+                console.log('Benutzer erfolgreich aktualisiert!');
+            } catch (error) {
+                console.error("Fehler beim Aktualisieren des Benutzers:", error);
+                alert(`Fehler: ${error}`);
+            }
+        } else { // Hinzufügen eines neuen Benutzers
+            try {
+                // Das userData-Objekt enthält jetzt das Passwort aus dem Formular
+                await apiClient.post('/api/users', userData, authToken);
+                await fetchAppData();
+                console.log('Benutzer erfolgreich angelegt!');
+            } catch (error) {
+                console.error("Fehler beim Anlegen des Benutzers:", error);
+                alert(`Fehler: ${error}`);
+            }
+        }
+        setUserModal({ isOpen: false, user: null });
+    };
 
-  const handleDeleteUser = async () => {
-    if (deleteUserModal) {
-      try {
-        await apiClient.delete(`/api/users/${deleteUserModal.id}`, authToken);
-        await fetchAppData(); // Lade die Benutzerliste neu
-        console.log('Benutzer erfolgreich gelöscht!');
-      } catch (error) {
-        console.error("Fehler beim Löschen des Benutzers:", error);
-        alert(`Fehler: ${error}`);
-      }
-      setDeleteUserModal(null); // Schließe das Modal in jedem Fall
-    }
-};
-  const handleSaveCustomerDetails = async (userToUpdate: any, dogToUpdate: any) => {
-    try {
-        // 1. Benutzerdaten aktualisieren
-        const userPayload = {
-            name: userToUpdate.name,
-            email: userToUpdate.email,
-            role: userToUpdate.role,
-            level_id: userToUpdate.level_id,
-            is_active: userToUpdate.is_active,
-            balance: userToUpdate.balance,
-            phone: userToUpdate.phone,
-        };
-        await apiClient.put(`/api/users/${userToUpdate.id}`, userPayload, authToken);
-
-        // 2. Hundedaten aktualisieren, falls vorhanden
-        if (dogToUpdate && dogToUpdate.id) {
-            const dogPayload = {
-                name: dogToUpdate.name,
-                chip: dogToUpdate.chip,
-                breed: dogToUpdate.breed,
-                birth_date: dogToUpdate.birth_date,
+    const handleDeleteUser = async () => {
+        if (deleteUserModal) {
+            try {
+                await apiClient.delete(`/api/users/${deleteUserModal.id}`, authToken);
+                await fetchAppData(); // Lade die Benutzerliste neu
+                console.log('Benutzer erfolgreich gelöscht!');
+            } catch (error) {
+                console.error("Fehler beim Löschen des Benutzers:", error);
+                alert(`Fehler: ${error}`);
+            }
+            setDeleteUserModal(null); // Schließe das Modal in jedem Fall
+        }
+    };
+    const handleSaveCustomerDetails = async (userToUpdate: any, dogToUpdate: any) => {
+        try {
+            // 1. Benutzerdaten aktualisieren
+            const userPayload = {
+                name: userToUpdate.name,
+                email: userToUpdate.email,
+                role: userToUpdate.role,
+                level_id: userToUpdate.level_id,
+                is_active: userToUpdate.is_active,
+                balance: userToUpdate.balance,
+                phone: userToUpdate.phone,
             };
-            await apiClient.put(`/api/dogs/${dogToUpdate.id}`, dogPayload, authToken);
+            await apiClient.put(`/api/users/${userToUpdate.id}`, userPayload, authToken);
+
+            // 2. Hundedaten aktualisieren, falls vorhanden
+            if (dogToUpdate && dogToUpdate.id) {
+                const dogPayload = {
+                    name: dogToUpdate.name,
+                    chip: dogToUpdate.chip,
+                    breed: dogToUpdate.breed,
+                    birth_date: dogToUpdate.birth_date,
+                };
+                await apiClient.put(`/api/dogs/${dogToUpdate.id}`, dogPayload, authToken);
+            }
+
+            // 3. App-Daten neu laden und Erfolgsmeldung zeigen
+            await fetchAppData();
+            console.log('Daten erfolgreich gespeichert!');
+
+        } catch (error) {
+            console.error("Fehler beim Speichern der Details:", error);
+            alert(`Ein Fehler ist aufgetreten: ${error}`);
         }
+    };
+    const handleSaveDog = async (dogData: any) => {
+        const customerId = view.customerId; // Holen wir uns die ID des aktuellen Kunden
+        if (!customerId) return;
 
-        // 3. App-Daten neu laden und Erfolgsmeldung zeigen
-        await fetchAppData();
-        console.log('Daten erfolgreich gespeichert!');
-
-    } catch (error) {
-        console.error("Fehler beim Speichern der Details:", error);
-        alert(`Ein Fehler ist aufgetreten: ${error}`);
-    }
-};
-  const handleSaveDog = async (dogData: any) => {
-    const customerId = view.customerId; // Holen wir uns die ID des aktuellen Kunden
-    if (!customerId) return;
-
-    try {
-        if (dogData.id) { // Wenn eine ID vorhanden ist -> Bearbeiten (PUT)
-            await apiClient.put(`/api/dogs/${dogData.id}`, dogData, authToken);
-        } else { // Ansonsten -> Neu anlegen (POST)
-            await apiClient.post(`/api/users/${customerId}/dogs`, dogData, authToken);
+        try {
+            if (dogData.id) { // Wenn eine ID vorhanden ist -> Bearbeiten (PUT)
+                await apiClient.put(`/api/dogs/${dogData.id}`, dogData, authToken);
+            } else { // Ansonsten -> Neu anlegen (POST)
+                await apiClient.post(`/api/users/${customerId}/dogs`, dogData, authToken);
+            }
+            await fetchAppData();
+            console.log("Hundedaten erfolgreich gespeichert.");
+        } catch (error) {
+            console.error("Fehler beim Speichern des Hundes:", error);
         }
-        await fetchAppData();
-        console.log("Hundedaten erfolgreich gespeichert.");
-    } catch (error) {
-        console.error("Fehler beim Speichern des Hundes:", error);
-    }
-};
+    };
 
-const handleConfirmDeleteDog = async () => {
-    if (!deletingDog) return;
-    try {
-        await apiClient.delete(`/api/dogs/${deletingDog.id}`, authToken);
-        await fetchAppData();
-        console.log("Hund erfolgreich gelöscht.");
-    } catch (error) {
-        console.error("Fehler beim Löschen des Hundes:", error);
-    }
-    setDeletingDog(null);
-};
-  const onUploadDocuments = async (files: File[], customerId: string) => {
-    // NEU: Lade-Spinner mit einer passenden Nachricht aktivieren
-    setServerLoading({ active: true, message: 'Lade Dokumente hoch...' });
-
-    try {
-        // Lade jede ausgewählte Datei hoch
-        for (const file of Array.from(files)) {
-            await apiClient.upload(`/api/users/${customerId}/documents`, file, authToken);
+    const handleConfirmDeleteDog = async () => {
+        if (!deletingDog) return;
+        try {
+            await apiClient.delete(`/api/dogs/${deletingDog.id}`, authToken);
+            await fetchAppData();
+            console.log("Hund erfolgreich gelöscht.");
+        } catch (error) {
+            console.error("Fehler beim Löschen des Hundes:", error);
         }
-        console.log(`${files.length} Dokument(e) erfolgreich hochgeladen.`);
-        await fetchAppData(); // Lade die Daten neu, um die Liste zu aktualisieren
-    } catch (error) {
-        console.error("Fehler beim Dokumenten-Upload:", error);
-        // Optional: Zeigen Sie eine Fehlermeldung an
-        alert(`Fehler beim Upload: ${error}`);
-    } finally {
-        // NEU: Lade-Spinner in jedem Fall wieder ausblenden
-        setServerLoading({ active: false, message: '' });
-    }
-};
+        setDeletingDog(null);
+    };
+    const onUploadDocuments = async (files: File[], customerId: string) => {
+        // NEU: Lade-Spinner mit einer passenden Nachricht aktivieren
+        setServerLoading({ active: true, message: 'Lade Dokumente hoch...' });
 
-const handleConfirmDeleteDocument = async () => {
-    if (!deletingDocument) return;
-    try {
-        await apiClient.delete(`/api/documents/${deletingDocument.id}`, authToken);
-        console.log("Dokument erfolgreich gelöscht.");
-        await fetchAppData();
-    } catch (error) {
-        console.error("Fehler beim Löschen des Dokuments:", error);
-    }
-    setDeletingDocument(null); // Modal nach der Aktion schließen
-};
-  const handleKpiClick = (type: string, color: string, data: { customers: any[]; transactions: any[] }) => {
-    let title = '';
-    let content: React.ReactNode = null;
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const today = now.toDateString();
+        try {
+            // Lade jede ausgewählte Datei hoch
+            for (const file of Array.from(files)) {
+                await apiClient.upload(`/api/users/${customerId}/documents`, file, authToken);
+            }
+            console.log(`${files.length} Dokument(e) erfolgreich hochgeladen.`);
+            await fetchAppData(); // Lade die Daten neu, um die Liste zu aktualisieren
+        } catch (error) {
+            console.error("Fehler beim Dokumenten-Upload:", error);
+            // Optional: Zeigen Sie eine Fehlermeldung an
+            alert(`Fehler beim Upload: ${error}`);
+        } finally {
+            // NEU: Lade-Spinner in jedem Fall wieder ausblenden
+            setServerLoading({ active: false, message: '' });
+        }
+    };
 
-    const renderCustomerList = (customerList: any[]) => (
-         <ul className="info-modal-list">
-            {customerList.map(c => {
-                const nameParts = c.name.split(' ');
-                const firstName = nameParts[0] || '';
-                const lastName = nameParts.slice(1).join(' ');
-                const dogName = c.dogs && c.dogs.length > 0 ? c.dogs[0].name : '-';
+    const handleConfirmDeleteDocument = async () => {
+        if (!deletingDocument) return;
+        try {
+            await apiClient.delete(`/api/documents/${deletingDocument.id}`, authToken);
+            console.log("Dokument erfolgreich gelöscht.");
+            await fetchAppData();
+        } catch (error) {
+            console.error("Fehler beim Löschen des Dokuments:", error);
+        }
+        setDeletingDocument(null); // Modal nach der Aktion schließen
+    };
+    const handleKpiClick = (type: string, color: string, data: { customers: any[]; transactions: any[] }) => {
+        let title = '';
+        let content: React.ReactNode = null;
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const today = now.toDateString();
 
-                return (
-                    <li key={c.id}>
-                        <span>{firstName} {lastName} ({dogName})</span>
-                        <span>€ {Math.floor(c.balance).toLocaleString('de-DE')}</span>
-                    </li>
-                );
-            })}
-        </ul>
-    );
-    const renderTransactionList = (txList: any[]) => (
-        <ul className="info-modal-list">
-            {txList.map(t => {
-                const cust = data.customers.find(c => c.id === t.user_id);
-                return <li key={t.id}><span>{t.description} - {cust?.name}</span> <span>€ {Math.floor(t.amount).toLocaleString('de-DE')}</span></li>
-            })}
-        </ul>
-    );
+        const renderCustomerList = (customerList: any[]) => (
+            <ul className="info-modal-list">
+                {customerList.map(c => {
+                    const nameParts = c.name.split(' ');
+                    const firstName = nameParts[0] || '';
+                    const lastName = nameParts.slice(1).join(' ');
+                    const dogName = c.dogs && c.dogs.length > 0 ? c.dogs[0].name : '-';
 
-    switch (type) {
-        case 'allCustomers':
-            title = 'Alle Kunden';
-            content = renderCustomerList(data.customers);
-            break;
-        case 'customersWithBalance':
-            title = 'Kunden mit Guthaben';
-            content = renderCustomerList(data.customers.filter(c => c.balance > 0));
-            break;
-        case 'transactionsToday':
-            title = 'Heutige Transaktionen';
-            // KORREKTUR: createdAt -> date (hier war der Absturz)
-            content = renderTransactionList(data.transactions.filter(t => new Date(t.date).toDateString() === today));
-            break;
-        case 'transactionsMonth':
-            title = 'Transaktionen im Monat';
-            // KORREKTUR: createdAt -> date
-            content = renderTransactionList(data.transactions.filter(t => new Date(t.date) >= startOfMonth));
-            break;
-        case 'activeCustomersMonth':
-            title = 'Aktive Kunden im Monat';
-            // KORREKTUR: createdAt -> date
-            const activeCustomerIds = new Set(data.transactions.filter(tx => new Date(tx.date) >= startOfMonth).map(tx => tx.user_id));
-            content = renderCustomerList(data.customers.filter(c => activeCustomerIds.has(c.id)));
-            break;
-    }
-    setModal({ isOpen: true, title, content, color });
-  };
-
-  // --- Data Scoping for Mitarbeiter ---
- // In frontend/index.tsx in der App-Komponente
-
-  // --- Data Scoping for Mitarbeiter ---
-  const { visibleCustomers, visibleTransactions } = useMemo(() => {
-    // Admins sehen immer alles
-    if (loggedInUser?.role === 'admin') {
-      return { visibleCustomers: customers, visibleTransactions: transactions };
-    }
-
-    // Mitarbeiter sehen nur die von ihnen gebuchten Transaktionen
-    // und nur die Kunden, die in diesen Transaktionen vorkommen.
-    if (loggedInUser?.role === 'mitarbeiter') {
-      const staffTransactions = transactions.filter(tx => tx.booked_by_id === loggedInUser.id);
-      const customerIdsInPortfolio = new Set(staffTransactions.map(tx => tx.user_id));
-      const portfolioCustomers = customers.filter(c => customerIdsInPortfolio.has(c.id));
-
-      return { visibleCustomers: portfolioCustomers, visibleTransactions: staffTransactions };
-    }
-
-    // Kunden sehen nur ihre eigenen Daten
-    if (loggedInUser?.role === 'kunde') {
-        // Die API liefert bereits nur die eigenen Transaktionen
-        return { visibleCustomers: customers, visibleTransactions: transactions };
-    }
-
-    // Fallback
-    return { visibleCustomers: [], visibleTransactions: [] };
-
-  }, [loggedInUser, customers, transactions]);
-  if (isLoading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Lade App...</div>;
-  }
-
-  if (!authToken || !loggedInUser) {
-    return (
-      <>
-        {isServerLoading.active && <LoadingSpinner message={isServerLoading.message} />}
-        <AuthScreen
-          onLoginStart={() => setServerLoading({ active: true, message: 'Verbinde mit Server...' })}
-          onLoginEnd={() => setServerLoading({ active: false, message: '' })}
-          onLoginSuccess={handleLoginSuccess}
-        />
-      </>
-    );
-  }
-
-  if (loggedInUser.role === 'kunde') {
-      const customer = customers.find(c => c.id === loggedInUser.id);
-      // NEU: State, um zwischen den Kundenseiten zu wechseln
-
-      if (customer) {
-        return (
-             <div className={`app-container ${isSidebarOpen ? "sidebar-open" : ""}`}>
-                <CustomerSidebar
-                    user={loggedInUser}
-                    onLogout={handleLogout}
-                    setSidebarOpen={setIsSidebarOpen}
-                    activePage={customerPage} // Wichtig: State übergeben
-                    setPage={setCustomerPage}  // Wichtig: Funktion zum Ändern übergeben
-                />
-
-                <main className="main-content">
-                    {isMobileView && (
-                        <header className="mobile-header">
-                            <button className="mobile-menu-button" onClick={() => setIsSidebarOpen(true)} aria-label="Menü öffnen">
-                                <Icon name="menu" />
-                            </button>
-                            <div className="mobile-header-logo">
-                                <Icon name="paw" className="logo" />
-                                <h2>PfotenCard</h2>
-                            </div>
-                        </header>
-                    )}
-
-                    {/* NEU: Hier wird je nach State die richtige Seite angezeigt */}
-                    {customerPage === 'overview' ? (
-                        <CustomerDetailPage
-                            customer={customer}
-                            transactions={transactions}
-                            setView={handleSetView}
-                            handleLevelUp={handleLevelUp}
-                            onSave={handleSaveCustomerDetails}
-                            onToggleVipStatus={onToggleVipStatus}
-                            onToggleExpertStatus={onToggleExpertStatus}
-                            currentUser={loggedInUser}
-                            users={users}
-                            onUploadDocuments={(files) => onUploadDocuments(files, String(customer.id))}
-                            onDeleteDocument={setDeletingDocument}
-                            fetchAppData={fetchAppData}
-                            authToken={authToken}
-                            onDeleteUserClick={setDeleteUserModal}
-                            setDogFormModal={setDogFormModal}
-                            setDeletingDog={setDeletingDog}
-                        />
-                    ) : (
-                        <CustomerTransactionsPage transactions={transactions} />
-                    )}
-                </main>
-                {isMobileView && isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
-             </div>
+                    return (
+                        <li key={c.id}>
+                            <span>{firstName} {lastName} ({dogName})</span>
+                            <span>€ {Math.floor(c.balance).toLocaleString('de-DE')}</span>
+                        </li>
+                    );
+                })}
+            </ul>
         );
-      }
-      return <div>Kundenprofil konnte nicht geladen werden. Bitte neu anmelden.</div>;
-  }
+        const renderTransactionList = (txList: any[]) => (
+            <ul className="info-modal-list">
+                {txList.map(t => {
+                    const cust = data.customers.find(c => c.id === t.user_id);
+                    return <li key={t.id}><span>{t.description} - {cust?.name}</span> <span>€ {Math.floor(t.amount).toLocaleString('de-DE')}</span></li>
+                })}
+            </ul>
+        );
 
-  
-  // Pfad: index.tsx
+        switch (type) {
+            case 'allCustomers':
+                title = 'Alle Kunden';
+                content = renderCustomerList(data.customers);
+                break;
+            case 'customersWithBalance':
+                title = 'Kunden mit Guthaben';
+                content = renderCustomerList(data.customers.filter(c => c.balance > 0));
+                break;
+            case 'transactionsToday':
+                title = 'Heutige Transaktionen';
+                // KORREKTUR: createdAt -> date (hier war der Absturz)
+                content = renderTransactionList(data.transactions.filter(t => new Date(t.date).toDateString() === today));
+                break;
+            case 'transactionsMonth':
+                title = 'Transaktionen im Monat';
+                // KORREKTUR: createdAt -> date
+                content = renderTransactionList(data.transactions.filter(t => new Date(t.date) >= startOfMonth));
+                break;
+            case 'activeCustomersMonth':
+                title = 'Aktive Kunden im Monat';
+                // KORREKTUR: createdAt -> date
+                const activeCustomerIds = new Set(data.transactions.filter(tx => new Date(tx.date) >= startOfMonth).map(tx => tx.user_id));
+                content = renderCustomerList(data.customers.filter(c => activeCustomerIds.has(c.id)));
+                break;
+        }
+        setModal({ isOpen: true, title, content, color });
+    };
 
-const renderContent = () => {
-    const kpiClickHandler = (type: string, color: string) => handleKpiClick(type, color, { customers: visibleCustomers, transactions: visibleTransactions });
+    // --- Data Scoping for Mitarbeiter ---
+    // In frontend/index.tsx in der App-Komponente
 
-    if (view.page === 'customers' && view.subPage === 'detail' && view.customerId) {
-        const customer = (directAccessedCustomer && String(directAccessedCustomer.id) === view.customerId)
-            ? directAccessedCustomer
-            : visibleCustomers.find(c => c.id === parseInt(view.customerId));
-        if (customer) return <CustomerDetailPage
-            customer={customer}
-            transactions={transactions}
-            setView={handleSetView}
-            handleLevelUp={handleLevelUp}
-            onSave={handleSaveCustomerDetails}
-            fetchAppData={fetchAppData}
-            currentUser={loggedInUser}
-            users={users}
-            onUploadDocuments={onUploadDocuments}
-            onDeleteDocument={setDeletingDocument}
-            authToken={authToken}
-            onDeleteUserClick={setDeleteUserModal}
-            onToggleVipStatus={onToggleVipStatus}
-            onToggleExpertStatus={onToggleExpertStatus}
-            setDogFormModal={setDogFormModal}
-            setDeletingDog={setDeletingDog}
-        />;
+    // --- Data Scoping for Mitarbeiter ---
+    const { visibleCustomers, visibleTransactions } = useMemo(() => {
+        // Admins sehen immer alles
+        if (loggedInUser?.role === 'admin') {
+            return { visibleCustomers: customers, visibleTransactions: transactions };
+        }
+
+        // Mitarbeiter sehen nur die von ihnen gebuchten Transaktionen
+        // und nur die Kunden, die in diesen Transaktionen vorkommen.
+        if (loggedInUser?.role === 'mitarbeiter') {
+            const staffTransactions = transactions.filter(tx => tx.booked_by_id === loggedInUser.id);
+            const customerIdsInPortfolio = new Set(staffTransactions.map(tx => tx.user_id));
+            const portfolioCustomers = customers.filter(c => customerIdsInPortfolio.has(c.id));
+
+            return { visibleCustomers: portfolioCustomers, visibleTransactions: staffTransactions };
+        }
+
+        // Kunden sehen nur ihre eigenen Daten
+        if (loggedInUser?.role === 'kunde') {
+            // Die API liefert bereits nur die eigenen Transaktionen
+            return { visibleCustomers: customers, visibleTransactions: transactions };
+        }
+
+        // Fallback
+        return { visibleCustomers: [], visibleTransactions: [] };
+
+    }, [loggedInUser, customers, transactions]);
+    if (isLoading) {
+        return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Lade App...</div>;
     }
-    if (view.page === 'customers' && view.subPage === 'transactions' && view.customerId) {
-        const customer = (directAccessedCustomer && String(directAccessedCustomer.id) === view.customerId)
-            ? directAccessedCustomer
-            : visibleCustomers.find(c => c.id === parseInt(view.customerId));
+
+    if (!authToken || !loggedInUser) {
+        return (
+            <>
+                {isServerLoading.active && <LoadingSpinner message={isServerLoading.message} />}
+                <AuthScreen
+                    onLoginStart={() => setServerLoading({ active: true, message: 'Verbinde mit Server...' })}
+                    onLoginEnd={() => setServerLoading({ active: false, message: '' })}
+                    onLoginSuccess={handleLoginSuccess}
+                />
+            </>
+        );
+    }
+
+    if (loggedInUser.role === 'kunde') {
+        const customer = customers.find(c => c.id === loggedInUser.id);
+        // NEU: State, um zwischen den Kundenseiten zu wechseln
 
         if (customer) {
-            return <TransactionManagementPage
-                        customer={customer}
-                        setView={handleSetView}
-                        onConfirmTransaction={handleConfirmTransaction}
-                        currentUser={loggedInUser}
-                    />;
+            return (
+                <div className={`app-container ${isSidebarOpen ? "sidebar-open" : ""}`}>
+                    <CustomerSidebar
+                        user={loggedInUser}
+                        onLogout={handleLogout}
+                        setSidebarOpen={setIsSidebarOpen}
+                        activePage={customerPage} // Wichtig: State übergeben
+                        setPage={setCustomerPage}  // Wichtig: Funktion zum Ändern übergeben
+                    />
+
+                    <main className="main-content">
+                        {isMobileView && (
+                            <header className="mobile-header">
+                                <button className="mobile-menu-button" onClick={() => setIsSidebarOpen(true)} aria-label="Menü öffnen">
+                                    <Icon name="menu" />
+                                </button>
+                                <div className="mobile-header-logo">
+                                    <Icon name="paw" className="logo" />
+                                    <h2>PfotenCard</h2>
+                                </div>
+                            </header>
+                        )}
+
+                        {/* NEU: Hier wird je nach State die richtige Seite angezeigt */}
+                        {customerPage === 'overview' ? (
+                            <CustomerDetailPage
+                                customer={customer}
+                                transactions={transactions}
+                                setView={handleSetView}
+                                handleLevelUp={handleLevelUp}
+                                onSave={handleSaveCustomerDetails}
+                                onToggleVipStatus={onToggleVipStatus}
+                                onToggleExpertStatus={onToggleExpertStatus}
+                                currentUser={loggedInUser}
+                                users={users}
+                                onUploadDocuments={(files) => onUploadDocuments(files, String(customer.id))}
+                                onDeleteDocument={setDeletingDocument}
+                                fetchAppData={fetchAppData}
+                                authToken={authToken}
+                                onDeleteUserClick={setDeleteUserModal}
+                                setDogFormModal={setDogFormModal}
+                                setDeletingDog={setDeletingDog}
+                            />
+                        ) : (
+                            <CustomerTransactionsPage transactions={transactions} />
+                        )}
+                    </main>
+                    {isMobileView && isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
+                </div>
+            );
+        }
+        return <div>Kundenprofil konnte nicht geladen werden. Bitte neu anmelden.</div>;
+    }
+
+
+    // Pfad: index.tsx
+
+    const renderContent = () => {
+        const kpiClickHandler = (type: string, color: string) => handleKpiClick(type, color, { customers: visibleCustomers, transactions: visibleTransactions });
+
+        if (view.page === 'customers' && view.subPage === 'detail' && view.customerId) {
+            const customer = (directAccessedCustomer && String(directAccessedCustomer.id) === view.customerId)
+                ? directAccessedCustomer
+                : visibleCustomers.find(c => c.id === parseInt(view.customerId));
+            if (customer) return <CustomerDetailPage
+                customer={customer}
+                transactions={transactions}
+                setView={handleSetView}
+                handleLevelUp={handleLevelUp}
+                onSave={handleSaveCustomerDetails}
+                fetchAppData={fetchAppData}
+                currentUser={loggedInUser}
+                users={users}
+                onUploadDocuments={onUploadDocuments}
+                onDeleteDocument={setDeletingDocument}
+                authToken={authToken}
+                onDeleteUserClick={setDeleteUserModal}
+                onToggleVipStatus={onToggleVipStatus}
+                onToggleExpertStatus={onToggleExpertStatus}
+                setDogFormModal={setDogFormModal}
+                setDeletingDog={setDeletingDog}
+            />;
+        }
+        if (view.page === 'customers' && view.subPage === 'transactions' && view.customerId) {
+            const customer = (directAccessedCustomer && String(directAccessedCustomer.id) === view.customerId)
+                ? directAccessedCustomer
+                : visibleCustomers.find(c => c.id === parseInt(view.customerId));
+
+            if (customer) {
+                return <TransactionManagementPage
+                    customer={customer}
+                    setView={handleSetView}
+                    onConfirmTransaction={handleConfirmTransaction}
+                    currentUser={loggedInUser}
+                />;
+            }
+
+            console.error("Fehler: Kunde für die Transaktionsverwaltung konnte nicht gefunden werden.");
+            setView({ page: 'dashboard' });
+            return null;
         }
 
-        console.error("Fehler: Kunde für die Transaktionsverwaltung konnte nicht gefunden werden.");
-        setView({ page: 'dashboard' });
-        return null;
-    }
+        switch (view.page) {
+            case 'customers':
+                return <KundenPage
+                    customers={visibleCustomers}
+                    transactions={visibleTransactions}
+                    setView={handleSetView}
+                    onKpiClick={kpiClickHandler}
+                    onAddCustomerClick={() => setAddCustomerModalOpen(true)}
+                    currentUser={loggedInUser}
+                />;
+            case 'reports':
+                return <BerichtePage
+                    transactions={visibleTransactions}
+                    customers={visibleCustomers}
+                    users={users}
+                    currentUser={loggedInUser}
+                />;
+            case 'users':
+                return loggedInUser.role === 'admin'
+                    ? <BenutzerPage
+                        users={users}
+                        onAddUserClick={() => setUserModal({ isOpen: true, user: null })}
+                        onEditUserClick={(user) => setUserModal({ isOpen: true, user })}
+                        onDeleteUserClick={(user) => setDeleteUserModal(user)}
+                        currentUser={loggedInUser}
+                    />
+                    : <DashboardPage
+                        customers={visibleCustomers}
+                        transactions={visibleTransactions}
+                        currentUser={loggedInUser}
+                        onKpiClick={kpiClickHandler}
+                        setView={handleSetView}
+                    />;
+            case 'dashboard':
+            default:
+                return <DashboardPage
+                    customers={visibleCustomers}
+                    transactions={visibleTransactions}
+                    currentUser={loggedInUser}
+                    onKpiClick={kpiClickHandler}
+                    setView={handleSetView}
+                />;
+        }
+    };
 
-    switch (view.page) {
-        case 'customers':
-            return <KundenPage
-                customers={visibleCustomers}
-                transactions={visibleTransactions}
-                setView={handleSetView}
-                onKpiClick={kpiClickHandler}
-                onAddCustomerClick={() => setAddCustomerModalOpen(true)}
-                currentUser={loggedInUser}
-            />;
-        case 'reports':
-            return <BerichtePage
-                transactions={visibleTransactions}
-                customers={visibleCustomers}
-                users={users}
-                currentUser={loggedInUser}
-            />;
-        case 'users':
-            return loggedInUser.role === 'admin'
-            ? <BenutzerPage
-                users={users}
-                onAddUserClick={() => setUserModal({ isOpen: true, user: null })}
-                onEditUserClick={(user) => setUserModal({ isOpen: true, user })}
-                onDeleteUserClick={(user) => setDeleteUserModal(user)}
-                currentUser={loggedInUser}
-            />
-            : <DashboardPage
-                customers={visibleCustomers}
-                transactions={visibleTransactions}
-                currentUser={loggedInUser}
-                onKpiClick={kpiClickHandler}
-                setView={handleSetView}
-            />;
-        case 'dashboard':
-        default:
-            return <DashboardPage
-                customers={visibleCustomers}
-                transactions={visibleTransactions}
-                currentUser={loggedInUser}
-                onKpiClick={kpiClickHandler}
-                setView={handleSetView}
-            />;
-    }
-  };
+    return (
+        <div className={`app-container ${isSidebarOpen ? "sidebar-open" : ""}`}>
+            {isServerLoading.active && <LoadingSpinner message={isServerLoading.message} />}
+            <Sidebar user={loggedInUser} activePage={view.page} setView={handleSetView} onLogout={() => setLoggedInUser(null)} setSidebarOpen={setIsSidebarOpen} />
+            <main className="main-content">
+                {isMobileView && (
+                    <header className="mobile-header">
+                        <button className="mobile-menu-button" onClick={() => setIsSidebarOpen(true)} aria-label="Menü öffnen">
+                            <Icon name="menu" />
+                        </button>
+                        <div className="mobile-header-logo">
+                            <Icon name="paw" className="logo" />
+                            <h2>PfotenCard</h2>
+                        </div>
+                    </header>
+                )}
+                {renderContent()}
+            </main>
+            {isMobileView && isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
+            {modal.isOpen && <InfoModal title={modal.title} color={modal.color} onClose={() => setModal({ isOpen: false, title: '', content: null, color: 'green' })}>{modal.content}</InfoModal>}
+            {addCustomerModalOpen && <AddCustomerModal onClose={() => setAddCustomerModalOpen(false)} onAddCustomer={handleAddCustomer} />}
 
-  return (
-    <div className={`app-container ${isSidebarOpen ? "sidebar-open" : ""}`}>
-      {isServerLoading.active && <LoadingSpinner message={isServerLoading.message} />}
-      <Sidebar user={loggedInUser} activePage={view.page} setView={handleSetView} onLogout={() => setLoggedInUser(null)} setSidebarOpen={setIsSidebarOpen} />
-      <main className="main-content">
-        {isMobileView && (
-            <header className="mobile-header">
-                <button className="mobile-menu-button" onClick={() => setIsSidebarOpen(true)} aria-label="Menü öffnen">
-                    <Icon name="menu" />
-                </button>
-                 <div className="mobile-header-logo">
-                    <Icon name="paw" className="logo" />
-                    <h2>PfotenCard</h2>
-                </div>
-            </header>
-        )}
-        {renderContent()}
-      </main>
-      {isMobileView && isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
-      {modal.isOpen && <InfoModal title={modal.title} color={modal.color} onClose={() => setModal({ isOpen: false, title: '', content: null, color: 'green' })}>{modal.content}</InfoModal>}
-      {addCustomerModalOpen && <AddCustomerModal onClose={() => setAddCustomerModalOpen(false)} onAddCustomer={handleAddCustomer} />}
-      
-      {/* User Management Modals */}
-      {userModal.isOpen && <UserFormModal user={userModal.user} onClose={() => setUserModal({ isOpen: false, user: null })} onSave={handleSaveUser} />}
-      {deleteUserModal && <DeleteUserModal user={deleteUserModal} onClose={() => setDeleteUserModal(null)} onConfirm={handleDeleteUser} />}
-       {deletingDocument && <DeleteDocumentModal document={deletingDocument} onClose={() => setDeletingDocument(null)} onConfirm={handleConfirmDeleteDocument} />}
-       {dogFormModal.isOpen && <DogFormModal dog={dogFormModal.dog} onClose={() => setDogFormModal({ isOpen: false, dog: null })} onSave={handleSaveDog} />}
-  {deletingDog && <DeleteDogModal dog={deletingDog} onClose={() => setDeletingDog(null)} onConfirm={handleConfirmDeleteDog} />}
-    </div>
-  );
+            {/* User Management Modals */}
+            {userModal.isOpen && <UserFormModal user={userModal.user} onClose={() => setUserModal({ isOpen: false, user: null })} onSave={handleSaveUser} />}
+            {deleteUserModal && <DeleteUserModal user={deleteUserModal} onClose={() => setDeleteUserModal(null)} onConfirm={handleDeleteUser} />}
+            {deletingDocument && <DeleteDocumentModal document={deletingDocument} onClose={() => setDeletingDocument(null)} onConfirm={handleConfirmDeleteDocument} />}
+            {dogFormModal.isOpen && <DogFormModal dog={dogFormModal.dog} onClose={() => setDogFormModal({ isOpen: false, dog: null })} onSave={handleSaveDog} />}
+            {deletingDog && <DeleteDogModal dog={deletingDog} onClose={() => setDeletingDog(null)} onConfirm={handleConfirmDeleteDog} />}
+        </div>
+    );
 };
 
 // Am Ende der Datei index.tsx
 
 const container = document.getElementById('root');
 if (container) {
-  const root = createRoot(container);
-  root.render(<App />);
+    const root = createRoot(container);
+    root.render(<App />);
 } // <-- DIESE KLAMMER HINZUFÜGEN

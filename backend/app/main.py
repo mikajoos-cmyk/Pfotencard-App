@@ -134,8 +134,8 @@ def update_user_endpoint(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(auth.get_current_active_user)
 ):
-    # Sicherheitsprüfung: Nur Admins dürfen Benutzer bearbeiten
-    if current_user.role not in ['admin', 'mitarbeiter']:
+    # Sicherheitsprüfung: Admins, Mitarbeiter oder der Benutzer selbst dürfen bearbeiten
+    if current_user.role not in ['admin', 'mitarbeiter'] and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to perform this action")
 
     updated_user = crud.update_user(db=db, user_id=user_id, user=user_update)
