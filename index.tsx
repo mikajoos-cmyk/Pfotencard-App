@@ -476,7 +476,7 @@ const AuthScreen: FC<{
     return (
         <div className="auth-container">
             <div className="auth-card">
-                <img src="/logo.png" alt="PfotenCard" style={{ width: '100px', margin: '0 auto 1rem', display: 'block' }} />
+                <img src="/paw.png" alt="PfotenCard Logo" style={{ width: '100px', height: '100px', margin: '0 auto 1rem', display: 'block' }} />
                 <h1>PfotenCard</h1>
                 <p className="subtitle">
                     {view === 'login' && 'Anmelden'}
@@ -598,7 +598,7 @@ const Sidebar: FC<{ user: User; activePage: Page; setView: (view: View) => void;
     return (
         <aside className="sidebar">
             <div className="sidebar-header">
-                <Icon name="paw" className="logo" width="80" height="80" />
+                <img src="/paw.png" alt="PfotenCard Logo" className="logo" width="40" height="40" />
                 <h2>PfotenCard</h2>
                 <button className="sidebar-close-button" onClick={() => setSidebarOpen(false)} aria-label="Menü schließen">
                     <Icon name="x" />
@@ -645,7 +645,7 @@ const CustomerSidebar: FC<{
     return (
         <aside className="sidebar">
             <div className="sidebar-header">
-                <Icon name="paw" className="logo" />
+                <img src="/paw.png" alt="PfotenCard Logo" className="logo" width="40" height="40" />
                 <h2>PfotenCard</h2>
                 <button className="sidebar-close-button" onClick={() => setSidebarOpen(false)} aria-label="Menü schließen">
                     <Icon name="x" />
@@ -1222,7 +1222,7 @@ const CustomerDetailPage: FC<{
                                     </div>
                                 </div>
                                 <div className="data-field">
-                                    <Icon name="paw" />
+                                    <img src="/paw.png" alt="Paw" style={{ width: '24px', height: '24px' }} />
                                     <div className="field-content">
                                         <label>Rasse</label>
                                         {isEditing ? <input type="text" name="breed" value={editedData.breed} onChange={handleInputChange} /> : <p>{dog?.breed || '-'}</p>}
@@ -2827,7 +2827,7 @@ const App: FC = () => {
                                     <Icon name="menu" />
                                 </button>
                                 <div className="mobile-header-logo">
-                                    <Icon name="paw" className="logo" />
+                                    <img src="/paw.png" alt="PfotenCard Logo" className="logo" style={{ width: '32px', height: '32px' }} />
                                     <h2>PfotenCard</h2>
                                 </div>
                             </header>
@@ -2967,7 +2967,7 @@ const App: FC = () => {
                             <Icon name="menu" />
                         </button>
                         <div className="mobile-header-logo">
-                            <Icon name="paw" className="logo" />
+                            <img src="/paw.png" alt="PfotenCard Logo" className="logo" width="32" height="32" />
                             <h2>PfotenCard</h2>
                         </div>
                     </header>

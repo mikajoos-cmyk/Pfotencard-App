@@ -3,12 +3,12 @@
   "name": "Dog-School Connect - PfotenCard",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/paw.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "/logo.png",
+      "src": "/paw.png",
       "type": "image/png",
       "sizes": "512x512"
     }
