@@ -1162,7 +1162,7 @@ const CustomerDetailPage: FC<{
                                 </>
                             ) : (
                                 <>
-                                    <button className="button button-outline" onClick={handleStartEditing}>Stammdaten</button>
+                                    <button className="button button-outline" onClick={handleStartEditing}>Stammdaten bearbeiten</button>
                                     {currentUser.role === 'admin' && (
                                         customer.is_vip ? (
                                             <button className="button button-outline" onClick={() => onToggleVipStatus(customer)}>VIP-Status aberkennen</button>
@@ -2607,22 +2607,23 @@ const App: FC = () => {
             // 1. Benutzerdaten aktualisieren
             const userPayload = {
                 name: userToUpdate.name,
-                email: userToUpdate.email,
+                email: userToUpdate.email || null, // Auch hier null statt "" senden
                 role: userToUpdate.role,
                 level_id: userToUpdate.level_id,
                 is_active: userToUpdate.is_active,
                 balance: userToUpdate.balance,
-                phone: userToUpdate.phone,
+                phone: userToUpdate.phone || null, // Auch hier null statt "" senden
             };
             await apiClient.put(`/api/users/${userToUpdate.id}`, userPayload, authToken);
 
             // 2. Hundedaten aktualisieren, falls vorhanden
             if (dogToUpdate && dogToUpdate.id) {
+                // HIER IST DIE WICHTIGE ÄNDERUNG:
                 const dogPayload = {
                     name: dogToUpdate.name,
-                    chip: dogToUpdate.chip,
-                    breed: dogToUpdate.breed,
-                    birth_date: dogToUpdate.birth_date,
+                    chip: dogToUpdate.chip || null,       // Wenn leer, sende null
+                    breed: dogToUpdate.breed || null,     // Wenn leer, sende null
+                    birth_date: dogToUpdate.birth_date || null, // WICHTIG: Leerer String "" verursacht den 422 Fehler!
                 };
                 await apiClient.put(`/api/dogs/${dogToUpdate.id}`, dogPayload, authToken);
             }
@@ -2633,23 +2634,35 @@ const App: FC = () => {
 
         } catch (error) {
             console.error("Fehler beim Speichern der Details:", error);
-            alert(`Ein Fehler ist aufgetreten: ${error}`);
+            // Verbesserte Fehlerausgabe für den Nutzer
+            alert(`Ein Fehler ist aufgetreten: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
         }
     };
     const handleSaveDog = async (dogData: any) => {
-        const customerId = view.customerId; // Holen wir uns die ID des aktuellen Kunden
+        const customerId = view.customerId;
         if (!customerId) return;
 
+        // Daten bereinigen: Leere Strings zu null konvertieren
+        const cleanDogData = {
+            ...dogData,
+            birth_date: dogData.birth_date || null,
+            breed: dogData.breed || null,
+            chip: dogData.chip || null
+        };
+
         try {
-            if (dogData.id) { // Wenn eine ID vorhanden ist -> Bearbeiten (PUT)
-                await apiClient.put(`/api/dogs/${dogData.id}`, dogData, authToken);
-            } else { // Ansonsten -> Neu anlegen (POST)
-                await apiClient.post(`/api/users/${customerId}/dogs`, dogData, authToken);
+            if (dogData.id) {
+                // Benutze cleanDogData statt dogData
+                await apiClient.put(`/api/dogs/${dogData.id}`, cleanDogData, authToken);
+            } else {
+                // Benutze cleanDogData statt dogData
+                await apiClient.post(`/api/users/${customerId}/dogs`, cleanDogData, authToken);
             }
             await fetchAppData();
             console.log("Hundedaten erfolgreich gespeichert.");
         } catch (error) {
             console.error("Fehler beim Speichern des Hundes:", error);
+            alert("Fehler beim Speichern: " + (error instanceof Error ? error.message : "Unbekannter Fehler"));
         }
     };
 
