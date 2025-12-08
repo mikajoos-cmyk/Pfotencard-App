@@ -2801,6 +2801,25 @@ const App: FC = () => {
                     onLoginEnd={() => setServerLoading({ active: false, message: '' })}
                     onLoginSuccess={handleLoginSuccess}
                 />
+
+                {/* HIER IST DIE KORREKTUR: Das Modal muss auch hier verfügbar sein! */}
+                {showPasswordReset && (
+                    <div className="modal-overlay">
+                        <div className="modal-content">
+                            <div className="modal-header blue"><h2>Neues Passwort vergeben</h2></div>
+                            <div className="modal-body">
+                                <p>Geben Sie hier Ihr neues Passwort ein.</p>
+                                <div className="form-group">
+                                    <label>Neues Passwort</label>
+                                    <input type="password" className="form-input" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="button button-primary" onClick={handlePasswordUpdate}>Speichern</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </>
         );
     }
