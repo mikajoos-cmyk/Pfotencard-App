@@ -12,6 +12,9 @@ from datetime import timedelta
 from . import crud, models, schemas, auth
 from .database import engine, get_db
 from .config import settings
+from supabase import create_client, Client
+from jose import jwt
+import time
 
 # This creates the tables if they don't exist.
 # In a production environment, you would use Alembic for migrations.
@@ -379,6 +382,37 @@ def delete_dog_endpoint(
 
 @app.post("/api/register", response_model=schemas.User)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    # 1. Create User in Supabase (if password provided)
+    if user.password:
+        try:
+            # Mint Service Role Token
+            payload = {
+                "role": "service_role",
+                "iss": "supabase",
+                "iat": int(time.time()),
+                "exp": int(time.time()) + 600, # 10 mins validity
+            }
+            service_role_token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+            
+            # Init Supabase Admin Client
+            supabase: Client = create_client(settings.SUPABASE_URL, service_role_token)
+            
+            # Create User (Auto-Confirm)
+            # Note: create_user implementation in supabase-py wraps admin.create_user
+            # We call auth.admin.create_user
+            supabase.auth.admin.create_user({
+                "email": user.email,
+                "password": user.password,
+                "email_confirm": True
+            })
+            print(f"Supabase User created (auto-verified): {user.email}")
+            
+        except Exception as e:
+            # If user already exists in Supabase, we might proceed or error.
+            # Using generic catch for safety, but printing error.
+            print(f"Supabase Creation Error (might already exist): {e}")
+
+    # 2. Local DB Creation
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")

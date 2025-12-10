@@ -425,25 +425,17 @@ const AuthScreen: FC<{
         onLoginStart();
 
         try {
-            // 1. User in Supabase Auth erstellen (Das "echte" Konto)
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email,
-                password,
-            });
-
-            if (authError) throw authError;
-
-            // 2. Profil im eigenen Backend anlegen (Datenbank-Eintrag)
-            // Wir senden ein Dummy-Passwort, da Supabase das echte Passwort verwaltet.
+            // 1. Registrierung über das Backend (erstellt Supabase User + DB Eintrag)
+            // Das Backend kümmert sich um "email_confirm: true"
             await apiClient.post('/api/register', {
                 name: name,
                 email: email,
-                password: "SUPABASE_MANAGED_ACCOUNT", // Dummy, wird nicht genutzt
+                password: password, // Echtes Passwort an Backend senden
                 role: "kunde",
                 dogs: [{ name: dogName }]
-            }, null); // Kein Token nötig, da offener Endpoint
+            }, null);
 
-            setMessage({ type: 'success', text: 'Registrierung erfolgreich! Bitte prüfen Sie Ihre E-Mails.' });
+            setMessage({ type: 'success', text: 'Registrierung erfolgreich! Sie können sich nun einloggen.' });
             setView('login');
 
         } catch (err: any) {
