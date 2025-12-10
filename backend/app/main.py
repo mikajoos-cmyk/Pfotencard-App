@@ -34,6 +34,7 @@ origins = [
     "http://localhost:5173",         # Gängiger Vite-Port
     "http://127.0.0.1:5173",         # Vite-Port mit IP statt Name
     "http://127.0.0.1:3000",         # React-Port mit IP statt Name
+    "http://localhost:5174"
 ]
 
 # Allows the frontend (running on a different port) to communicate with the backend.
@@ -76,6 +77,40 @@ async def read_users_me(current_user: schemas.User = Depends(auth.get_current_ac
 # --- USERS / CUSTOMERS ---
 @app.post("/api/users", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    # --- SUPABASE AUTH SYNC START ---
+    # Wenn ein Admin einen User anlegt und ein Passwort vergibt,
+    # legen wir diesen User auch in Supabase an.
+    if user.password:
+        try:
+            # 1. Wir generieren uns selbst einen "Service Role Token"
+            # (Da wir das Secret Key haben, können wir uns als Admin ausgeben)
+            payload = {
+                "role": "service_role",
+                "iss": "supabase",
+                "iat": int(time.time()),
+                "exp": int(time.time()) + 600, # 10 Minuten gültig
+            }
+            service_role_token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+            
+            # 2. Supabase Admin Client initialisieren
+            supabase: Client = create_client(settings.SUPABASE_URL, service_role_token)
+            
+            # 3. User in Supabase erstellen
+            # 'email_confirm': True -> Der Admin hat den User erstellt, also bestätigen wir ihn direkt.
+            # Der User kann sich sofort mit Email + Passwort einloggen.
+            supabase.auth.admin.create_user({
+                "email": user.email,
+                "password": user.password,
+                "email_confirm": True
+            })
+            print(f"Supabase User via Admin-Panel erstellt: {user.email}")
+            
+        except Exception as e:
+            # Wir loggen den Fehler, brechen aber nicht ab (z.B. wenn User in Auth schon existiert)
+            print(f"Warnung: Supabase User konnte nicht erstellt werden (existiert evtl. schon): {e}")
+    # --- SUPABASE AUTH SYNC END ---
+
+    # 4. Lokalen Datenbank-Eintrag erstellen (Standard-Logik)
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -383,38 +418,11 @@ def delete_dog_endpoint(
 
 @app.post("/api/register", response_model=schemas.User)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    # 1. Create User in Supabase (if password provided)
-    if user.password:
-        try:
-            # Mint Service Role Token
-            payload = {
-                "role": "service_role",
-                "iss": "supabase",
-                "iat": int(time.time()),
-                "exp": int(time.time()) + 600, # 10 mins validity
-            }
-            service_role_token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-            
-            # Init Supabase Admin Client
-            supabase: Client = create_client(settings.SUPABASE_URL, service_role_token)
-            
-            # Create User (Auto-Confirm)
-            # Note: create_user implementation in supabase-py wraps admin.create_user
-            # We call auth.admin.create_user
-            supabase.auth.admin.create_user({
-                "email": user.email,
-                "password": user.password,
-                "email_confirm": True
-            })
-            print(f"Supabase User created (auto-verified): {user.email}")
-            
-        except Exception as e:
-            # If user already exists in Supabase, we might proceed or error.
-            # Using generic catch for safety, but printing error.
-            print(f"Supabase Creation Error (might already exist): {e}")
-
-    # 2. Local DB Creation
+    # Wir prüfen nur, ob die Email in der lokalen DB schon existiert
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Wir erstellen NUR den lokalen Datenbank-User.
+    # Der Supabase-Auth-User wurde bereits vom Frontend erstellt.
     return crud.create_user(db=db, user=user)

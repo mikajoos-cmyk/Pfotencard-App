@@ -374,12 +374,14 @@ const LoadingSpinner: FC<{ message: string }> = ({ message }) => (
 // --- AUTH KOMPONENTE ---
 // In frontend/index.tsx in der AuthScreen Komponente
 
+// --- AUTH KOMPONENTE ---
 const AuthScreen: FC<{
     onLoginStart: () => void;
     onLoginEnd: () => void;
     onLoginSuccess: (token: string, user: any) => void;
 }> = ({ onLoginStart, onLoginEnd, onLoginSuccess }) => {
-    const [view, setView] = useState<'login' | 'register' | 'forgot'>('login');
+    // State erweitert um 'verify'
+    const [view, setView] = useState<'login' | 'register' | 'forgot' | 'verify'>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
@@ -393,7 +395,6 @@ const AuthScreen: FC<{
         onLoginStart();
 
         try {
-            // 1. Login direkt bei Supabase
             const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
@@ -401,11 +402,7 @@ const AuthScreen: FC<{
 
             if (error) throw error;
 
-            // 2. Token holen
             const token = data.session.access_token;
-
-            // 3. Profildaten vom eigenen Backend holen (via E-Mail Match)
-            // Das Backend nutzt jetzt den Supabase-Token zur Identifizierung
             const userResponse = await apiClient.get('/api/users/me', token);
 
             onLoginSuccess(token, userResponse);
@@ -425,27 +422,49 @@ const AuthScreen: FC<{
         onLoginStart();
 
         try {
-            // 1. Registrierung über das Backend (erstellt Supabase User + DB Eintrag)
-            // Das Backend kümmert sich um "email_confirm: true"
+            // 1. Supabase Auth Registrierung (Löst E-Mail-Versand aus!)
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    emailRedirectTo: window.location.origin
+                }
+            });
+
+            if (authError) throw authError;
+
+            // Schutz: Wenn keine User-ID zurückkommt, brechen wir ab (verhindert "User in DB aber nicht Auth")
+            if (!authData.user) {
+                throw new Error("Fehler bei der Authentifizierung. Bitte versuchen Sie es erneut.");
+            }
+
+            // 2. Profil im Backend anlegen (Nur wenn Schritt 1 erfolgreich war)
             await apiClient.post('/api/register', {
                 name: name,
                 email: email,
-                password: password, // Echtes Passwort an Backend senden
+                password: password, // Wird für die DB als Hash gespeichert
                 role: "kunde",
                 dogs: [{ name: dogName }]
             }, null);
 
-            setMessage({ type: 'success', text: 'Registrierung erfolgreich! Sie können sich nun einloggen.' });
-            setView('login');
+            // 3. Erfolgsfall
+            if (authData.session) {
+                // Falls Auto-Confirm an ist (passiert selten bei E-Mail-Zwang)
+                onLoginSuccess(authData.session.access_token, await apiClient.get('/api/users/me', authData.session.access_token));
+            } else {
+                // Standardfall: E-Mail muss bestätigt werden
+                setMessage({ type: 'success', text: 'Konto erstellt! Bitte bestätigen Sie Ihre E-Mail.' });
+                setView('verify');
+            }
 
         } catch (err: any) {
             console.error(err);
-            setMessage({ type: 'error', text: 'Registrierung fehlgeschlagen: ' + err.message });
+            // Falls der User in Supabase schon existiert (Fehler 400/422), geben wir das aus
+            setMessage({ type: 'error', text: 'Registrierung fehlgeschlagen: ' + (err.message || 'Unbekannter Fehler') });
         } finally {
             onLoginEnd();
         }
     };
-
     // --- PASSWORT VERGESSEN ---
     const handleForgot = async (e: FormEvent) => {
         e.preventDefault();
@@ -454,7 +473,7 @@ const AuthScreen: FC<{
 
         try {
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: window.location.origin, // Nutzer kommt hierher zurück
+                redirectTo: window.location.origin,
             });
             if (error) throw error;
             setMessage({ type: 'success', text: 'Link zum Zurücksetzen wurde gesendet!' });
@@ -462,6 +481,24 @@ const AuthScreen: FC<{
             setMessage({ type: 'error', text: err.message });
         } finally {
             onLoginEnd();
+        }
+    };
+
+    // --- E-MAIL ERNEUT SENDEN ---
+    const handleResendMail = async () => {
+        setMessage(null);
+        try {
+            const { error } = await supabase.auth.resend({
+                type: 'signup',
+                email: email,
+                options: {
+                    emailRedirectTo: window.location.origin
+                }
+            });
+            if (error) throw error;
+            setMessage({ type: 'success', text: 'E-Mail wurde erneut gesendet!' });
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message });
         }
     };
 
@@ -474,6 +511,7 @@ const AuthScreen: FC<{
                     {view === 'login' && 'Anmelden'}
                     {view === 'register' && 'Neues Konto erstellen'}
                     {view === 'forgot' && 'Passwort zurücksetzen'}
+                    {view === 'verify' && 'E-Mail Bestätigung'}
                 </p>
 
                 {message && (
@@ -489,47 +527,74 @@ const AuthScreen: FC<{
                     </div>
                 )}
 
-                <form onSubmit={view === 'login' ? handleLogin : (view === 'register' ? handleRegister : handleForgot)}>
-
-                    {view === 'register' && (
-                        <>
-                            <div className="form-group"><label>Ihr Name</label><input type="text" className="form-input" value={name} onChange={e => setName(e.target.value)} required /></div>
-                            <div className="form-group"><label>Hundename</label><input type="text" className="form-input" value={dogName} onChange={e => setDogName(e.target.value)} required /></div>
-                        </>
-                    )}
-
-                    <div className="form-group">
-                        <label>E-Mail</label>
-                        <input type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} required />
-                    </div>
-
-                    {view !== 'forgot' && (
-                        <div className="form-group">
-                            <label>Passwort</label>
-                            <input type="password" className="form-input" value={password} onChange={e => setPassword(e.target.value)} required />
+                {view === 'verify' ? (
+                    /* --- VERIFY SCREEN --- */
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ margin: '2rem 0', color: 'var(--brand-green)', display: 'flex', justifyContent: 'center' }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
                         </div>
-                    )}
+                        <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
+                            Wir haben eine Bestätigungs-E-Mail an <strong>{email}</strong> gesendet.
+                            Bitte klicken Sie auf den Link in der E-Mail, um Ihr Konto zu aktivieren.
+                        </p>
+                        <button type="button" onClick={handleResendMail} className="button button-outline" style={{ width: '100%', marginBottom: '1rem' }}>
+                            E-Mail erneut senden
+                        </button>
+                        <button type="button" onClick={() => setView('login')} className="button button-primary" style={{ width: '100%' }}>
+                            Zum Login
+                        </button>
+                    </div>
+                ) : (
+                    /* --- FORMULAR FÜR LOGIN / REGISTER / FORGOT --- */
+                    <form onSubmit={view === 'login' ? handleLogin : (view === 'register' ? handleRegister : handleForgot)}>
 
-                    <button type="submit" className="button button-primary" style={{ width: '100%', marginTop: '1rem' }}>
-                        {view === 'login' ? 'Anmelden' : (view === 'register' ? 'Registrieren' : 'Link senden')}
-                    </button>
-                </form>
+                        {view === 'register' && (
+                            <>
+                                <div className="form-group"><label>Ihr Name</label><input type="text" className="form-input" value={name} onChange={e => setName(e.target.value)} required /></div>
+                                <div className="form-group"><label>Hundename</label><input type="text" className="form-input" value={dogName} onChange={e => setDogName(e.target.value)} required /></div>
+                            </>
+                        )}
 
-                <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
-                    {view === 'login' && (
-                        <>
-                            <button className="button-as-link" onClick={() => setView('forgot')}>Passwort vergessen?</button>
-                            <button className="button-as-link" onClick={() => setView('register')}>Noch kein Konto? Jetzt registrieren</button>
-                        </>
-                    )}
-                    {view !== 'login' && (
-                        <button className="button-as-link" onClick={() => setView('login')}>Zurück zum Login</button>
-                    )}
-                </div>
+                        <div className="form-group">
+                            <label>E-Mail</label>
+                            <input type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} required />
+                        </div>
+
+                        {view !== 'forgot' && (
+                            <div className="form-group">
+                                <label>Passwort</label>
+                                <input type="password" className="form-input" value={password} onChange={e => setPassword(e.target.value)} required />
+                            </div>
+                        )}
+
+                        <button type="submit" className="button button-primary" style={{ width: '100%', marginTop: '1rem' }}>
+                            {view === 'login' ? 'Anmelden' : (view === 'register' ? 'Registrieren' : 'Link senden')}
+                        </button>
+                    </form>
+                )}
+
+                {/* --- NAVIGATION LINKS (nur wenn nicht im Verify-Modus) --- */}
+                {view !== 'verify' && (
+                    <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
+                        {view === 'login' && (
+                            <>
+                                <button className="button-as-link" onClick={() => setView('forgot')}>Passwort vergessen?</button>
+                                <button className="button-as-link" onClick={() => setView('register')}>Noch kein Konto? Jetzt registrieren</button>
+                            </>
+                        )}
+                        {view !== 'login' && (
+                            <button className="button-as-link" onClick={() => setView('login')}>Zurück zum Login</button>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
 };
+
 // --- LAYOUT & UI KOMPONENTEN ---
 const OnlineStatusIndicator: FC = () => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
