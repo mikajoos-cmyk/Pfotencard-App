@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
 
 // Konfiguration (am besten in .env, aber für hier hardcoded ok)
-const SUPABASE_URL = 'HTTPS://iwzyptinnwgswtdholxd.SUPABASE.CO';
+const SUPABASE_URL = 'https://iwzyptinnwgswtdholxd.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3enlwdGlubndnc3d0ZGhvbHhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxMDM3NzcsImV4cCI6MjA4MDY3OTc3N30.uoPvLgeWu1ua-46glb8V3ynYrjrTnFIc8KPDPD4wI5A';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
