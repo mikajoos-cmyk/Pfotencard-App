@@ -83,7 +83,6 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if user.password:
         try:
             # 1. Wir generieren uns selbst einen "Service Role Token"
-            # (Da wir das Secret Key haben, können wir uns als Admin ausgeben)
             payload = {
                 "role": "service_role",
                 "iss": "supabase",
@@ -96,8 +95,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
             supabase: Client = create_client(settings.SUPABASE_URL, service_role_token)
             
             # 3. User in Supabase erstellen
-            # 'email_confirm': True -> Der Admin hat den User erstellt, also bestätigen wir ihn direkt.
-            # Der User kann sich sofort mit Email + Passwort einloggen.
+            # email_confirm: True -> Admin hat ihn erstellt, also ist er sofort bestätigt
             supabase.auth.admin.create_user({
                 "email": user.email,
                 "password": user.password,
