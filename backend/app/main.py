@@ -171,24 +171,19 @@ def update_user_endpoint(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(auth.get_current_active_user)
 ):
-    # Sicherheitsprüfung: Admins, Mitarbeiter oder der Benutzer selbst dürfen bearbeiten
+    # --- AUTH CHECKS ---
     is_self = current_user.id == user_id
     is_staff = current_user.role in ['admin', 'mitarbeiter']
     
     if not is_staff and not is_self:
         raise HTTPException(status_code=403, detail="Not authorized to perform this action")
     
-    # Wenn ein Kunde seine eigenen Daten bearbeitet, darf er nur bestimmte Felder ändern
+    db_user = crud.get_user(db, user_id=user_id)
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Kunde darf nur eigene Daten beschränkt ändern
     if is_self and current_user.role == 'kunde':
-        # Erstelle ein eingeschränktes Update-Objekt nur mit erlaubten Feldern
-        allowed_fields = {
-            'name': user_update.name,
-            'email': user_update.email,
-            'phone': user_update.phone,
-            # Alle anderen Felder werden ignoriert (role, balance, level_id, etc.)
-        }
-        # Erstelle ein neues UserUpdate-Objekt mit den erlaubten Feldern
-        # und den aktuellen Werten für die nicht-änderbaren Felder
         user_update.role = current_user.role
         user_update.balance = current_user.balance
         user_update.level_id = current_user.level_id
@@ -196,9 +191,54 @@ def update_user_endpoint(
         user_update.is_expert = current_user.is_expert
         user_update.is_active = current_user.is_active
 
+    # --- SUPABASE SYNC START ---
+    should_sync_supabase = (user_update.email or user_update.password or user_update.name)
+    
+    if should_sync_supabase:
+        try:
+            print(f"DEBUG: Starte Supabase Sync für User {db_user.email}...")
+            supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+            
+            # 1. User finden (über ALTE Email)
+            found_uid = None
+            users_response = supabase.auth.admin.list_users(page=1, per_page=1000)
+            user_list = users_response if isinstance(users_response, list) else getattr(users_response, 'users', [])
+            
+            search_email = db_user.email.lower().strip()
+            for u in user_list:
+                if u.email and u.email.lower().strip() == search_email:
+                    found_uid = u.id
+                    break
+            
+            if found_uid:
+                attributes = {}
+                if user_update.email:
+                    attributes["email"] = user_update.email
+                if user_update.password:
+                    # Supabase verlangt min. 6 Zeichen!
+                    if len(user_update.password) < 6:
+                        raise ValueError("Passwort muss mindestens 6 Zeichen lang sein.")
+                    attributes["password"] = user_update.password
+                if user_update.name:
+                    attributes["user_metadata"] = { "name": user_update.name }
+                
+                if attributes:
+                    # Hier wird der Fehler geworfen, falls Supabase das Passwort ablehnt
+                    supabase.auth.admin.update_user_by_id(found_uid, attributes)
+                    print(f"DEBUG: Supabase Update erfolgreich für {found_uid}")
+            else:
+                # WICHTIG: Wenn der User in Supabase fehlt, geben wir einen Fehler zurück!
+                raise HTTPException(status_code=404, detail="Benutzer in Supabase Auth DB nicht gefunden. Bitte Admin kontaktieren.")
+
+        except Exception as e:
+            print(f"FEHLER beim Supabase Update: {e}")
+            # HIER DIE ÄNDERUNG: Wir geben den Fehler an das Frontend weiter!
+            # So sehen Sie im Browser-Alert, was schiefgelaufen ist.
+            raise HTTPException(status_code=400, detail=f"Fehler beim Aktualisieren: {str(e)}")
+    # --- SUPABASE SYNC END ---
+
+    # Lokales Update durchführen
     updated_user = crud.update_user(db=db, user_id=user_id, user=user_update)
-    if updated_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
     return updated_user
 
 @app.put("/api/users/{user_id}/status", response_model=schemas.User)
@@ -250,9 +290,43 @@ def delete_user_endpoint(
     if current_user.role != 'admin':
         raise HTTPException(status_code=403, detail="Only admins can delete users")
 
-    result = crud.delete_user(db=db, user_id=user_id)
-    if result is None:
+    # 1. Lokalen User abrufen (wir brauchen die E-Mail)
+    user_to_delete = crud.get_user(db, user_id)
+    if not user_to_delete:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # 2. SUPABASE SYNC: User auch dort löschen
+    try:
+        supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+        
+        # Workaround: Supabase ID anhand der E-Mail finden
+        # (Da wir lokal nur Integer-IDs speichern)
+        found_uid = None
+        # Holt standardmäßig die ersten 50 User. Für größere Apps müsste man paginieren.
+        users_response = supabase.auth.admin.list_users() 
+        
+        # Hinweis: Die Struktur der Response kann je nach Library-Version variieren, 
+        # meist ist es direkt eine Liste oder ein Objekt mit einem 'users'-Attribut.
+        user_list = users_response if isinstance(users_response, list) else getattr(users_response, 'users', [])
+
+        for u in user_list:
+            if u.email == user_to_delete.email:
+                found_uid = u.id
+                break
+        
+        if found_uid:
+            supabase.auth.admin.delete_user(found_uid)
+            print(f"Supabase User erfolgreich gelöscht: {user_to_delete.email}")
+        else:
+            print(f"Warnung: User {user_to_delete.email} konnte in Supabase nicht gefunden werden (evtl. schon gelöscht).")
+
+    except Exception as e:
+        print(f"FEHLER beim Löschen in Supabase: {e}")
+        # Optional: Hier Fehler werfen, wenn man das lokale Löschen verhindern will
+        # raise HTTPException(status_code=500, detail="Supabase Sync failed")
+
+    # 3. Lokal löschen
+    result = crud.delete_user(db=db, user_id=user_id)
     return result
 
 # --- TRANSACTIONS ---

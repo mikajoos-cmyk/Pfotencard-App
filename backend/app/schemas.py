@@ -27,10 +27,20 @@ class UserBase(BaseModel):
     is_expert: bool = False
 
 class UserCreate(UserBase):
-    password: Optional[str] = None # <-- HIER DIE ÄNDERUNG
+    password: Optional[str] = None
     dogs: List[DogCreate] = []
 
-class UserUpdate(UserBase):
+# KORREKTUR: Alle Felder optional machen, um Datenverlust bei Teil-Updates zu verhindern
+class UserUpdate(BaseModel):
+    email: Optional[str] = None
+    name: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    balance: Optional[float] = None
+    phone: Optional[str] = None
+    level_id: Optional[int] = None
+    is_vip: Optional[bool] = None
+    is_expert: Optional[bool] = None
     password: Optional[str] = None
 
 class UserStatusUpdate(BaseModel):
@@ -45,10 +55,10 @@ class TransactionBase(BaseModel):
 
 class TransactionCreate(TransactionBase):
     user_id: int
-    requirement_id: Optional[str] = None  # For achievements
+    requirement_id: Optional[str] = None
 
 
-# --- Full Schemas with Relationships (for responses) ---
+# --- Full Schemas with Relationships ---
 
 class Dog(DogBase):
     id: int
@@ -62,7 +72,7 @@ class Achievement(BaseModel):
     id: int
     requirement_id: str
     date_achieved: datetime
-    is_consumed: bool  # <-- NEUE ZEILE
+    is_consumed: bool
 
     class Config:
         from_attributes = True
