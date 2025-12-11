@@ -171,7 +171,7 @@ def update_user_endpoint(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(auth.get_current_active_user)
 ):
-    # --- AUTH CHECKS ---
+    # 1. Grundlegende Berechtigungsprüfung
     is_self = current_user.id == user_id
     is_staff = current_user.role in ['admin', 'mitarbeiter']
     
@@ -182,7 +182,17 @@ def update_user_endpoint(
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Kunde darf nur eigene Daten beschränkt ändern
+    # 2. NEU: E-Mail-Änderung nur für Admins erlauben
+    # Wir prüfen, ob eine neue E-Mail gesendet wurde UND ob sie sich von der alten unterscheidet
+    if user_update.email and user_update.email.lower().strip() != db_user.email.lower().strip():
+        if current_user.role != 'admin':
+            # Wenn kein Admin: Fehler werfen!
+            raise HTTPException(
+                status_code=403, 
+                detail="Die E-Mail-Adresse kann aus Sicherheitsgründen nur von einem Administrator geändert werden."
+            )
+
+    # 3. Einschränkungen für Kunden (dürfen bestimmte Felder nicht ändern)
     if is_self and current_user.role == 'kunde':
         user_update.role = current_user.role
         user_update.balance = current_user.balance
@@ -190,16 +200,22 @@ def update_user_endpoint(
         user_update.is_vip = current_user.is_vip
         user_update.is_expert = current_user.is_expert
         user_update.is_active = current_user.is_active
+        # Hinweis: E-Mail-Schutz wird bereits oben in Schritt 2 erledigt
 
-    # --- SUPABASE SYNC START ---
-    should_sync_supabase = (user_update.email or user_update.password or user_update.name)
-    
-    if should_sync_supabase:
+    # 4. Prüfen auf Änderungen für Supabase Sync
+    # Da Schritt 2 unberechtigte E-Mail-Änderungen blockiert, kommen wir hier nur hin,
+    # wenn die Änderung erlaubt ist (z.B. Admin ändert E-Mail oder User ändert nur Name/Passwort).
+    email_changed = user_update.email and user_update.email.lower().strip() != db_user.email.lower().strip()
+    password_changed = user_update.password is not None
+    name_changed = user_update.name and user_update.name != db_user.name
+
+    # 5. SUPABASE SYNC START
+    if email_changed or password_changed or name_changed:
         try:
             print(f"DEBUG: Starte Supabase Sync für User {db_user.email}...")
             supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
             
-            # 1. User finden (über ALTE Email)
+            # A) User in Supabase finden (über die ALTE E-Mail)
             found_uid = None
             users_response = supabase.auth.admin.list_users(page=1, per_page=1000)
             user_list = users_response if isinstance(users_response, list) else getattr(users_response, 'users', [])
@@ -212,33 +228,32 @@ def update_user_endpoint(
             
             if found_uid:
                 attributes = {}
-                if user_update.email:
+                if email_changed:
                     attributes["email"] = user_update.email
-                if user_update.password:
-                    # Supabase verlangt min. 6 Zeichen!
+                
+                if password_changed:
                     if len(user_update.password) < 6:
                         raise ValueError("Passwort muss mindestens 6 Zeichen lang sein.")
                     attributes["password"] = user_update.password
-                if user_update.name:
+                
+                if name_changed:
                     attributes["user_metadata"] = { "name": user_update.name }
                 
                 if attributes:
-                    # Hier wird der Fehler geworfen, falls Supabase das Passwort ablehnt
                     supabase.auth.admin.update_user_by_id(found_uid, attributes)
                     print(f"DEBUG: Supabase Update erfolgreich für {found_uid}")
             else:
-                # WICHTIG: Wenn der User in Supabase fehlt, geben wir einen Fehler zurück!
-                raise HTTPException(status_code=404, detail="Benutzer in Supabase Auth DB nicht gefunden. Bitte Admin kontaktieren.")
+                # Nur warnen, damit lokale DB trotzdem aktualisiert wird (Selbstheilung)
+                print(f"WARNUNG: User {db_user.email} in Supabase nicht gefunden. Sync übersprungen.")
 
         except Exception as e:
             print(f"FEHLER beim Supabase Update: {e}")
-            # HIER DIE ÄNDERUNG: Wir geben den Fehler an das Frontend weiter!
-            # So sehen Sie im Browser-Alert, was schiefgelaufen ist.
-            raise HTTPException(status_code=400, detail=f"Fehler beim Aktualisieren: {str(e)}")
-    # --- SUPABASE SYNC END ---
+            raise HTTPException(status_code=400, detail=f"Fehler bei der Aktualisierung: {str(e)}")
+    # SUPABASE SYNC END
 
-    # Lokales Update durchführen
+    # 6. Lokales Update durchführen
     updated_user = crud.update_user(db=db, user_id=user_id, user=user_update)
+    
     return updated_user
 
 @app.put("/api/users/{user_id}/status", response_model=schemas.User)

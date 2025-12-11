@@ -1125,8 +1125,10 @@ const CustomerDetailPage: FC<{
 
     const handleCancelEdit = () => setIsEditing(false);
 
+    // Innerhalb von CustomerDetailPage in index.tsx
+
     const handleSave = () => {
-        // Stellt sicher, dass der Name korrekt zusammengefügt wird
+        // 1. User-Daten vorbereiten
         const userPayload = {
             ...customer,
             name: `${editedData.firstName} ${editedData.lastName}`.trim(),
@@ -1134,15 +1136,30 @@ const CustomerDetailPage: FC<{
             phone: editedData.phone
         };
 
+        // 2. Hunde-Daten vorbereiten
         let dogPayload = null;
-        if (dog) {
-            dogPayload = {
-                ...dog,
-                name: editedData.dogName,
-                chip: editedData.chip,
-                breed: editedData.breed,
-                birth_date: editedData.birth_date,
-            };
+
+        // Prüfen, ob überhaupt ein Hundename eingegeben wurde
+        if (editedData.dogName) {
+            if (dog) {
+                // Fall A: Hund existiert bereits -> Update
+                dogPayload = {
+                    ...dog,
+                    name: editedData.dogName,
+                    chip: editedData.chip,
+                    breed: editedData.breed,
+                    birth_date: editedData.birth_date,
+                };
+            } else {
+                // Fall B: Kein Hund vorhanden -> Neuer Hund (ohne ID)
+                dogPayload = {
+                    name: editedData.dogName,
+                    chip: editedData.chip,
+                    breed: editedData.breed,
+                    birth_date: editedData.birth_date,
+                    // Wichtig: Keine ID übergeben, damit die App weiß, dass es ein neuer Hund ist
+                };
+            }
         }
 
         // Ruft die zentrale Speicherfunktion auf
@@ -1265,7 +1282,19 @@ const CustomerDetailPage: FC<{
                                     <Icon name="mail" />
                                     <div className="field-content">
                                         <label>E-Mail</label>
-                                        {isEditing ? <input type="email" name="email" value={editedData.email} onChange={handleInputChange} /> : <p>{customer.email || '-'}</p>}
+                                        {isEditing ? (
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={editedData.email}
+                                                onChange={handleInputChange}
+                                                // NEU: Nur Admins dürfen das Feld bearbeiten
+                                                disabled={currentUser.role !== 'admin'}
+                                                style={currentUser.role !== 'admin' ? { color: 'var(--text-secondary)', cursor: 'not-allowed' } : {}}
+                                            />
+                                        ) : (
+                                            <p>{customer.email || '-'}</p>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="data-field">
@@ -2663,39 +2692,50 @@ const App: FC = () => {
             setDeleteUserModal(null); // Schließe das Modal in jedem Fall
         }
     };
+    // Innerhalb von App in index.tsx
+
     const handleSaveCustomerDetails = async (userToUpdate: any, dogToUpdate: any) => {
         try {
             // 1. Benutzerdaten aktualisieren
             const userPayload = {
                 name: userToUpdate.name,
-                email: userToUpdate.email || null, // Auch hier null statt "" senden
+                email: userToUpdate.email || null,
                 role: userToUpdate.role,
                 level_id: userToUpdate.level_id,
                 is_active: userToUpdate.is_active,
                 balance: userToUpdate.balance,
-                phone: userToUpdate.phone || null, // Auch hier null statt "" senden
+                phone: userToUpdate.phone || null,
             };
             await apiClient.put(`/api/users/${userToUpdate.id}`, userPayload, authToken);
 
-            // 2. Hundedaten aktualisieren, falls vorhanden
-            if (dogToUpdate && dogToUpdate.id) {
-                // HIER IST DIE WICHTIGE ÄNDERUNG:
-                const dogPayload = {
+            // 2. Hundedaten verarbeiten (Update oder Neu)
+            if (dogToUpdate) {
+                // Daten bereinigen (leere Strings zu null)
+                const cleanDogData = {
                     name: dogToUpdate.name,
-                    chip: dogToUpdate.chip || null,       // Wenn leer, sende null
-                    breed: dogToUpdate.breed || null,     // Wenn leer, sende null
-                    birth_date: dogToUpdate.birth_date || null, // WICHTIG: Leerer String "" verursacht den 422 Fehler!
+                    chip: dogToUpdate.chip || null,
+                    breed: dogToUpdate.breed || null,
+                    birth_date: dogToUpdate.birth_date || null,
                 };
-                await apiClient.put(`/api/dogs/${dogToUpdate.id}`, dogPayload, authToken);
+
+                if (dogToUpdate.id) {
+                    // Fall A: Hund hat eine ID -> UPDATE (PUT)
+                    await apiClient.put(`/api/dogs/${dogToUpdate.id}`, cleanDogData, authToken);
+                    console.log('Hund aktualisiert');
+                } else {
+                    // Fall B: Hund hat KEINE ID -> NEU ANLEGEN (POST)
+                    // Wir nutzen den User-ID aus userToUpdate
+                    await apiClient.post(`/api/users/${userToUpdate.id}/dogs`, cleanDogData, authToken);
+                    console.log('Neuer Hund angelegt');
+                }
             }
 
-            // 3. App-Daten neu laden und Erfolgsmeldung zeigen
+            // 3. App-Daten neu laden
             await fetchAppData();
             console.log('Daten erfolgreich gespeichert!');
 
         } catch (error) {
             console.error("Fehler beim Speichern der Details:", error);
-            // Verbesserte Fehlerausgabe für den Nutzer
             alert(`Ein Fehler ist aufgetreten: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
         }
     };
