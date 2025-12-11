@@ -82,30 +82,28 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     # legen wir diesen User auch in Supabase an.
     if user.password:
         try:
-            # 1. Wir generieren uns selbst einen "Service Role Token"
-            payload = {
-                "role": "service_role",
-                "iss": "supabase",
-                "iat": int(time.time()),
-                "exp": int(time.time()) + 600, # 10 Minuten gültig
-            }
-            service_role_token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-            
-            # 2. Supabase Admin Client initialisieren
-            supabase: Client = create_client(settings.SUPABASE_URL, service_role_token)
+            # KORREKTUR: Wir nutzen direkt den Service Role Key aus der Config
+            # Statt den Token selbst zu signieren.
+            supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
             
             # 3. User in Supabase erstellen
             # email_confirm: True -> Admin hat ihn erstellt, also ist er sofort bestätigt
             supabase.auth.admin.create_user({
                 "email": user.email,
                 "password": user.password,
-                "email_confirm": True
+                "email_confirm": True,
+                "user_metadata": { "name": user.name } # Optional: Name auch in Metadaten speichern
             })
             print(f"Supabase User via Admin-Panel erstellt: {user.email}")
             
         except Exception as e:
-            # Wir loggen den Fehler, brechen aber nicht ab (z.B. wenn User in Auth schon existiert)
-            print(f"Warnung: Supabase User konnte nicht erstellt werden (existiert evtl. schon): {e}")
+            # WICHTIG: Prüfen Sie die Logs. Wenn hier ein Fehler auftritt, existiert der User evtl. schon.
+            # Wenn es ein kritischer Fehler ist, sollten Sie hier evtl. 'raise HTTPException' machen,
+            # damit die Daten nicht inkonsistent werden (User in DB aber nicht in Auth).
+            print(f"FEHLER beim Erstellen des Supabase Users: {e}")
+            # Optional: Abbrechen, wenn Auth fehlschlägt:
+            # raise HTTPException(status_code=500, detail=f"Fehler bei Auth-Erstellung: {e}")
+
     # --- SUPABASE AUTH SYNC END ---
 
     # 4. Lokalen Datenbank-Eintrag erstellen (Standard-Logik)
