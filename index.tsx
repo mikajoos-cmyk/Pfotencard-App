@@ -1811,6 +1811,8 @@ const DeleteDogModal: FC<{ dog: any; onClose: () => void; onConfirm: () => void;
         </div>
     </div>
 );
+// Suchen Sie in index.tsx nach der Komponente "BerichtePage" und ersetzen Sie sie durch diesen Code:
+
 const BerichtePage: FC<{
     transactions: any[],
     customers: any[],
@@ -1822,6 +1824,29 @@ const BerichtePage: FC<{
         currentUser.role === 'admin' ? 'all' : String(currentUser.id)
     );
     const [selectedPeriod, setSelectedPeriod] = useState<string>('');
+
+    // --- NEU: Hilfsfunktion zum Berechnen des echten Umsatzes (ohne Bonus) ---
+    const getRealAmount = (tx: any) => {
+        // Abbuchungen (negative Beträge) bleiben unverändert
+        if (tx.amount <= 0) return tx.amount;
+
+        // Nur bei Aufladungen wurde potenziell ein Bonus gewährt
+        // Wir prüfen auf "Aufladung" (Backend-Name) oder "topup" (falls Mocks verwendet werden)
+        if (tx.type === 'Aufladung' || tx.type === 'topup') {
+            // Logik rückwärts gerechnet basierend auf crud.py:
+            // >= 300€ Einzahlung (+150 Bonus) = >= 450€ Gesamt
+            if (tx.amount >= 450) return tx.amount - 150;
+            // >= 150€ Einzahlung (+30 Bonus) = >= 180€ Gesamt
+            if (tx.amount >= 180) return tx.amount - 30;
+            // >= 100€ Einzahlung (+15 Bonus) = >= 115€ Gesamt
+            if (tx.amount >= 115) return tx.amount - 15;
+            // >= 50€ Einzahlung (+5 Bonus) = >= 55€ Gesamt
+            if (tx.amount >= 55) return tx.amount - 5;
+        }
+
+        // Keine Bonus-Stufe erreicht oder anderer Transaktionstyp -> Betrag ist der echte Umsatz
+        return tx.amount;
+    };
 
     const availablePeriods = useMemo(() => {
         const periods: { monthly: Set<string>, yearly: Set<string> } = { monthly: new Set(), yearly: new Set() };
@@ -1839,7 +1864,6 @@ const BerichtePage: FC<{
         };
     }, [transactions]);
 
-    // KORREKTUR 1: Dieser useEffect setzt jetzt den Zeitraum korrekt zurück, wenn der Berichtstyp geändert wird.
     useEffect(() => {
         if (reportType === 'monthly' && availablePeriods.monthly.length > 0) {
             setSelectedPeriod(availablePeriods.monthly[0]);
@@ -1848,7 +1872,7 @@ const BerichtePage: FC<{
         } else {
             setSelectedPeriod('');
         }
-    }, [reportType, availablePeriods]); // Die Abhängigkeit von selectedPeriod wurde entfernt.
+    }, [reportType, availablePeriods]);
 
     const filteredTransactions = useMemo(() => {
         if (!selectedPeriod) return [];
@@ -1863,18 +1887,18 @@ const BerichtePage: FC<{
         });
     }, [transactions, reportType, selectedPeriod, selectedMitarbeiter]);
 
+    // --- ÄNDERUNG: Berechnung des Umsatzes mit getRealAmount ---
     const revenue = filteredTransactions
-        .filter(t => t.amount > 0) // Aufladungen sind alle Transaktionen mit POSITIVEM Betrag
-        .reduce((sum, tx) => sum + tx.amount, 0);
+        .filter(t => t.amount > 0)
+        .reduce((sum, tx) => sum + getRealAmount(tx), 0);
 
     const debits = filteredTransactions
-        .filter(t => t.amount < 0) // Abbuchungen sind alle Transaktionen mit NEGATIVEM Betrag
+        .filter(t => t.amount < 0)
         .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
     const topCustomers = useMemo(() => {
         const customerSpending: { [key: string]: { customer: any, count: number, total: number } } = {};
 
-        // Filtert jetzt ebenfalls nach negativem Betrag, um die Ausgaben zu finden
         filteredTransactions.filter(tx => tx.amount < 0).forEach(tx => {
             const cust = customers.find(c => c.id === tx.user_id);
             if (!cust) return;
@@ -1895,25 +1919,21 @@ const BerichtePage: FC<{
     };
 
     const handleExportCSV = () => {
-        // 1. Helper-Funktion zum sicheren Formatieren einer CSV-Zelle
         const escapeCSV = (value: any) => {
-            const stringValue = String(value ?? ''); // Stellt sicher, dass es ein String ist (handhabt null/undefined)
-
-            // Wenn ein Komma, ein Anführungszeichen oder ein Zeilenumbruch enthalten ist,
-            // muss der gesamte String in Anführungszeichen gesetzt werden.
+            const stringValue = String(value ?? '');
             if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-                // Alle Anführungszeichen innerhalb des Strings verdoppeln und alles in Anführungszeichen setzen
                 return `"${stringValue.replace(/"/g, '""')}"`;
             }
             return stringValue;
         };
 
-        const headers = ["Datum", "Kunde", "Hund", "Titel", "Typ", "Betrag", "Erstellt von"];
+        // Header angepasst: "Echter Betrag" statt nur "Betrag" um Verwirrung zu vermeiden
+        const headers = ["Datum", "Kunde", "Hund", "Titel", "Typ", "Echter Betrag (ohne Bonus)", "Gebuchter Betrag (inkl. Bonus)", "Erstellt von"];
 
-        // 2. Jede Zeile mit der escapeCSV-Funktion erstellen
         const rows = filteredTransactions.map(tx => {
             const customer = customers.find(c => c.id === tx.user_id);
             const creator = users.find(u => u.id === tx.booked_by_id);
+            const realAmount = getRealAmount(tx);
 
             const rowData = [
                 new Date(tx.date).toLocaleString('de-DE'),
@@ -1921,42 +1941,48 @@ const BerichtePage: FC<{
                 customer?.dogs[0]?.name || '',
                 tx.description,
                 tx.type,
-                tx.amount,
+                realAmount, // Hier der echte Geldbetrag
+                tx.amount,  // Zum Vergleich der gebuchte Betrag
                 creator?.name || 'Unbekannt'
             ];
 
-            // Jede Zelle in der Zeile escapen und dann mit Komma verbinden
             return rowData.map(escapeCSV).join(',');
         });
 
-        // 3. BOM für UTF-8-Kompatibilität in Excel hinzufügen
         const bom = '\uFEFF';
         const csvContent = "data:text/csv;charset=utf-8," + bom + [headers.join(','), ...rows].join('\n');
 
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `bericht_${selectedPeriod}.csv`);
+        link.setAttribute("download", `bericht_umsatz_${selectedPeriod}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
     const handleExportPDF = () => {
-        const reportTitle = `Bericht für ${formatPeriodForDisplay(selectedPeriod, reportType)}`;
+        const reportTitle = `Umsatzbericht für ${formatPeriodForDisplay(selectedPeriod, reportType)}`;
         const mitarbeiter = selectedMitarbeiter === 'all' ? 'Alle Mitarbeiter' : users.find(u => u.id === selectedMitarbeiter)?.name;
 
         let tableRows = filteredTransactions.map(tx => {
-            // KORREKTUR: Die richtigen IDs verwenden
             const customer = customers.find(c => c.id === tx.user_id);
             const creator = users.find(u => u.id === tx.booked_by_id);
+            const realAmount = getRealAmount(tx);
+
+            // Logik für die Anzeige: Wenn Bonus dabei war, zeigen wir das an
+            const isTopupWithBonus = tx.amount > realAmount;
+            const displayAmount = isTopupWithBonus
+                ? `${realAmount.toLocaleString('de-DE')} € <br><span style="font-size:0.8em; color:#666">(+${(tx.amount - realAmount).toLocaleString('de-DE')} Bonus)</span>`
+                : `${tx.amount.toLocaleString('de-DE')} €`;
+
             return `
                 <tr>
                     <td>${new Date(tx.date).toLocaleDateString('de-DE')}</td>
                     <td>${customer?.name || 'Unbekannt'}</td>
                     <td>${tx.description}</td>
                     <td>${creator?.name || 'Unbekannt'}</td>
-                    <td style="text-align: right; color: ${tx.amount < 0 ? 'red' : 'green'};">${tx.amount.toLocaleString('de-DE')} €</td>
+                    <td style="text-align: right; color: ${tx.amount < 0 ? 'red' : 'green'};">${displayAmount}</td>
                 </tr>
             `;
         }).join('');
@@ -1975,7 +2001,7 @@ const BerichtePage: FC<{
                         .summary-item .label { font-size: 0.9rem; color: #666; }
                         .summary-item .value { font-size: 1.5rem; font-weight: bold; }
                         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
                         th { background-color: #f2f2f2; }
                     </style>
                 </head>
@@ -1984,11 +2010,11 @@ const BerichtePage: FC<{
                     <h3>Mitarbeiter: ${mitarbeiter}</h3>
                     <div class="summary">
                         <div class="summary-item">
-                            <div class="label">Gesamteinnahmen</div>
+                            <div class="label">Tatsächliche Einnahmen (ohne Bonus)</div>
                             <div class="value" style="color: green;">${revenue.toLocaleString('de-DE')} €</div>
                         </div>
                         <div class="summary-item">
-                            <div class="label">Gesamtabbuchungen</div>
+                            <div class="label">Gesamtabbuchungen (Leistungen)</div>
                             <div class="value" style="color: red;">${debits.toLocaleString('de-DE')} €</div>
                         </div>
                     </div>
@@ -2000,7 +2026,7 @@ const BerichtePage: FC<{
                                 <th>Kunde</th>
                                 <th>Titel</th>
                                 <th>Erstellt von</th>
-                                <th style="text-align: right;">Betrag</th>
+                                <th style="text-align: right;">Einnahme / Abbuchung</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2019,12 +2045,11 @@ const BerichtePage: FC<{
         printWindow?.close();
     };
 
-
     return (
         <>
             <header className="page-header">
                 <h1>Berichte & Statistiken</h1>
-                <p>Analysieren und exportieren Sie Ihre Geschäftsdaten</p>
+                <p>Analysieren und exportieren Sie Ihre echten Umsätze</p>
             </header>
 
             <div className="content-box filter-export-panel">
@@ -2049,7 +2074,6 @@ const BerichtePage: FC<{
                             <label>Mitarbeiter</label>
                             <select className="form-input" value={selectedMitarbeiter} onChange={e => setSelectedMitarbeiter(e.target.value)}>
                                 <option value="all">Alle Mitarbeiter</option>
-                                {/* KORREKTUR 2: Hier wird jetzt nach 'kunde' (deutsch) gefiltert */}
                                 {users.filter(u => u.role !== 'kunde').map(u => (
                                     <option key={u.id} value={String(u.id)}>{u.name}</option>
                                 ))}
@@ -2068,7 +2092,8 @@ const BerichtePage: FC<{
             </div>
 
             <div className="kpi-grid">
-                <KpiCard title={`Gesamtaufladungen (${reportType === 'monthly' ? 'Monat' : 'Jahr'})`} value={`€ ${Math.floor(revenue).toLocaleString('de-DE')}`} icon="creditCard" bgIcon="creditCard" color="green" />
+                {/* Titel angepasst auf "Echte Einnahmen" */}
+                <KpiCard title={`Echte Einnahmen (${reportType === 'monthly' ? 'Monat' : 'Jahr'})`} value={`€ ${Math.floor(revenue).toLocaleString('de-DE')}`} icon="creditCard" bgIcon="creditCard" color="green" />
                 <KpiCard title={`Abbuchungen (${reportType === 'monthly' ? 'Monat' : 'Jahr'})`} value={`€ ${Math.floor(debits).toLocaleString('de-DE')}`} icon="creditCard" bgIcon="creditCard" color="orange" />
                 <KpiCard title="Transaktionen" value={filteredTransactions.length.toString()} icon="trendingUp" bgIcon="trendingUp" color="blue" />
                 <KpiCard title="Aktive Kunden" value={new Set(filteredTransactions.map(tx => tx.user_id)).size.toString()} icon="customers" bgIcon="customers" color="purple" />
@@ -2080,6 +2105,9 @@ const BerichtePage: FC<{
                         {filteredTransactions.length > 0 ? filteredTransactions.map(tx => {
                             const customer = customers.find(c => c.id === tx.user_id);
                             const creator = users.find(u => u.id === tx.booked_by_id);
+                            // Auch in der Liste zeigen wir den gebuchten Betrag an, aber man könnte hier auch den echten Betrag anzeigen
+                            // Ich lasse hier den gebuchten Betrag, damit es mit dem Kontostand des Kunden übereinstimmt,
+                            // aber die KPI oben zeigt den echten Umsatz.
                             return (
                                 <li key={tx.id}>
                                     <div className={`tx-icon ${tx.amount < 0 ? 'debit' : 'topup'}`}>
@@ -2107,7 +2135,6 @@ const BerichtePage: FC<{
                     <h2>Top Kunden im Zeitraum</h2>
                     <ul className="top-customer-list">
                         {topCustomers.length > 0 ? topCustomers.map((custData, index) => {
-                            // HIER KOMMT DIE KORREKTUR:
                             const nameParts = custData.customer.name.split(' ');
                             const firstName = nameParts[0] || '';
                             const lastName = nameParts.slice(1).join(' ');
