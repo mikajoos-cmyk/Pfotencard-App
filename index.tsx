@@ -1527,7 +1527,7 @@ const TransactionManagementPage: FC<{ customer: Customer; setView: (view: View) 
 
     const debits = [
         { title: 'Gruppenstunde', amount: -15, reqId: 'group_class' },
-        { title: 'Trail', amount: -18, reqId: 'trail' },
+        { title: 'Mantrailing', amount: -18, reqId: 'trail' },
         { title: 'Prüfungsstunde', amount: -15, reqId: 'exam' },
         { title: 'Social Walk', amount: -15, reqId: 'social_walk' },
         { title: 'Wirtshaustraining', amount: -15, reqId: 'tavern_training' },
@@ -3018,6 +3018,7 @@ const App: FC = () => {
                         )}
                     </main>
                     {isMobileView && isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
+                    {deletingDocument && <DeleteDocumentModal document={deletingDocument} onClose={() => setDeletingDocument(null)} onConfirm={handleConfirmDeleteDocument} />}
                 </div>
             );
         }
