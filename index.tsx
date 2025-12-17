@@ -881,7 +881,7 @@ const DashboardPage: FC<{
     return (
         <>
             <header className="page-header">
-                <h1>Willkommen, {currentUser.name}!</h1>
+                <h1>Hallo, {currentUser.name}!</h1>
                 <p>Übersicht Ihrer Hundeschul-Wertkarten</p>
             </header>
             <div className="kpi-grid">
@@ -1227,7 +1227,7 @@ const CustomerDetailPage: FC<{
                     <button className="back-button" onClick={() => setView({ page: 'customers' })}><Icon name="arrowLeft" /></button>
                 }
                 <div className="detail-header-info">
-                    <h1>{firstName} {lastName}</h1>
+                    <h1>Hallo, {firstName} {lastName}</h1>
                     <p>Kundendetails & Übersicht</p>
                 </div>
                 <div className="header-actions" style={{ marginLeft: 'auto' }}>
@@ -1312,7 +1312,7 @@ const CustomerDetailPage: FC<{
                                     </div>
                                 </div>
                                 <div className="data-field">
-                                    <img src="/paw.png" alt="Paw" style={{ width: '24px', height: '24px' }} />
+                                    <img src="/paw_icon.png" alt="Paw" style={{ width: '24px', height: '24px' }} />
                                     <div className="field-content">
                                         <label>Rasse</label>
                                         {isEditing ? <input type="text" name="breed" value={editedData.breed} onChange={handleInputChange} /> : <p>{dog?.breed || '-'}</p>}
@@ -1322,7 +1322,7 @@ const CustomerDetailPage: FC<{
                                     <Icon name="calendar" />
                                     <div className="field-content">
                                         <label>Geburtstag</label>
-                                        {isEditing ? <input type="date" name="birth_date" value={editedData.birth_date} onChange={handleInputChange} /> : <p>{dog?.birth_date || '-'}</p>}
+                                        {isEditing ? <input type="date" name="birth_date" value={editedData.birth_date} onChange={handleInputChange} /> : <p>{dog?.birth_date ? new Date(dog.birth_date).toLocaleDateString('de-DE') : '-'}</p>}
                                     </div>
                                 </div>
                                 <div className="data-field">
@@ -1963,7 +1963,7 @@ const BerichtePage: FC<{
 
     const handleExportPDF = () => {
         const reportTitle = `Umsatzbericht für ${formatPeriodForDisplay(selectedPeriod, reportType)}`;
-        const mitarbeiter = selectedMitarbeiter === 'all' ? 'Alle Mitarbeiter' : users.find(u => u.id === selectedMitarbeiter)?.name;
+        const mitarbeiter = selectedMitarbeiter === 'all' ? 'Alle Mitarbeiter' : users.find(u => String(u.id) === selectedMitarbeiter)?.name;
 
         let tableRows = filteredTransactions.map(tx => {
             const customer = customers.find(c => c.id === tx.user_id);
