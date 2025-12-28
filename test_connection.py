@@ -22,7 +22,7 @@ engine = create_engine(DATABASE_URL)
 # https://docs.sqlalchemy.org/en/20/core/pooling.html#switching-pool-implementations
 # engine = create_engine(, poolclass=NullPool)
 
-# Test the connection
+# Test the connectiontest
 try:
     with engine.connect() as connection:
         print("Connection successful!")

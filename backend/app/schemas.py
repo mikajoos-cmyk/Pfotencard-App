@@ -105,8 +105,11 @@ class User(UserBase):
     customer_since: datetime
     dogs: List[Dog] = []
     transactions: List[Transaction] = []
-    achievements: List[Achievement] = []
-    documents: List[Document] = []
+    
+    # HINZUFÜGEN (mit Anführungszeichen wie gewünscht):
+    documents: List['Document'] = []
+    achievements: List['Achievement'] = []
+    # -----------
 
     class Config:
         from_attributes = True
