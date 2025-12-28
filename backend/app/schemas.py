@@ -1,9 +1,18 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, date
+from uuid import UUID
 
 
 # --- Base and Create Schemas ---
+
+class Level(BaseModel):
+    id: int
+    name: str
+    imageUrl: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 class DogBase(BaseModel):
     name: str
@@ -102,11 +111,17 @@ class Document(BaseModel):
 
 class User(UserBase):
     id: int
+    tenant_id: int
+    auth_id: Optional[UUID] = None
     customer_since: datetime
+    
     dogs: List[Dog] = []
-    transactions: List[Transaction] = []
-    achievements: List[Achievement] = []
-    documents: List[Document] = []
+    current_level: Optional['Level'] = None
+    
+    # HINZUFÜGEN:
+    documents: List['Document'] = []
+    achievements: List['Achievement'] = []
+    # -----------
 
     class Config:
         from_attributes = True

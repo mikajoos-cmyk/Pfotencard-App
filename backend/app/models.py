@@ -1,13 +1,19 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Date, Boolean
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import func
-
+ 
 Base = declarative_base()
-
-
+ 
+class Tenant(Base):
+    __tablename__ = 'tenants'
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+ 
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, default=1, nullable=False) # NEU
+    auth_id = Column(String(255), unique=True, index=True, nullable=True) # NEU
     name = Column(String(255), index=True, nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
@@ -67,6 +73,7 @@ class Achievement(Base):
 class Document(Base):
     __tablename__ = 'documents'
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, default=1, nullable=False) # NEU
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     file_name = Column(String(255), nullable=False)
     file_type = Column(String(100), nullable=False)

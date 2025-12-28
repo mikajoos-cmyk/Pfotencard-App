@@ -333,20 +333,23 @@ def update_dog(db: Session, dog_id: int, dog: schemas.DogBase):
 
 # In backend/app/crud.py
 
-def create_document(db: Session, user_id: int, file_name: str, file_type: str, file_path: str):
+def create_document(db: Session, user_id: int, tenant_id: int, file_name: str, file_type: str, file_path: str):
     db_doc = models.Document(
-        user_id=user_id, file_name=file_name, file_type=file_type, file_path=file_path
+        user_id=user_id, tenant_id=tenant_id, file_name=file_name, file_type=file_type, file_path=file_path
     )
     db.add(db_doc)
     db.commit()
     db.refresh(db_doc)
     return db_doc
 
-def get_document(db: Session, document_id: int):
-    return db.query(models.Document).filter(models.Document.id == document_id).first()
+def get_document(db: Session, document_id: int, tenant_id: int = None):
+    query = db.query(models.Document).filter(models.Document.id == document_id)
+    if tenant_id:
+        query = query.filter(models.Document.tenant_id == tenant_id)
+    return query.first()
 
-def delete_document(db: Session, document_id: int):
-    db_doc = get_document(db, document_id)
+def delete_document(db: Session, document_id: int, tenant_id: int = None):
+    db_doc = get_document(db, document_id, tenant_id)
     if db_doc:
         db.delete(db_doc)
         db.commit()

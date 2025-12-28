@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from . import crud, schemas
+from . import crud, schemas, models
 from .config import settings
 from .database import get_db
 
@@ -104,3 +104,13 @@ async def get_current_active_user(
 
     print(f"DEBUG: Login erfolgreich für User ID: {user.id}")
     return user
+
+async def get_current_tenant(db: Session = Depends(get_db)) -> models.Tenant:
+    # Minimal-Implementierung: Gibt den ersten Tenant zurück oder erstellt einen Standard-Tenant
+    tenant = db.query(models.Tenant).first()
+    if not tenant:
+        tenant = models.Tenant(id=1, name="Default Tenant")
+        db.add(tenant)
+        db.commit()
+        db.refresh(tenant)
+    return tenant
