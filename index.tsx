@@ -840,6 +840,8 @@ const DocumentViewerModal: FC<{ document: DocumentFile; onClose: () => void; }> 
                 <div className="modal-body">
                     {isImage ? (
                         <img src={document.url} alt={document.name} className="preview" />
+                    ) : document.type === 'application/pdf' ? (
+                        <iframe src={document.url} width="100%" height="500px" title={document.name} />
                     ) : (
                         <p>Vorschau für diesen Dateityp nicht verfügbar.</p>
                     )}
@@ -1058,7 +1060,7 @@ const CustomerDetailPage: FC<{
     onUpdateStatus: (userId: string, statusType: 'vip' | 'expert', value: boolean) => void;
     setDogFormModal: (modalState: { isOpen: boolean; dog: any | null }) => void;
     setDeletingDog: (dog: any | null) => void;
-}> = ({ customer, transactions, setView, handleLevelUp, onSave, currentUser, users, documents, onUploadDocuments, onDeleteDocument, fetchAppData, onDeleteUserClick, onUpdateStatus, onToggleVipStatus, onToggleExpertStatus, setDogFormModal, setDeletingDog }) => {
+}> = ({ customer, transactions, setView, handleLevelUp, onSave, currentUser, users, onUploadDocuments, onDeleteDocument, fetchAppData, authToken, onDeleteUserClick, onUpdateStatus, onToggleVipStatus, onToggleExpertStatus, setDogFormModal, setDeletingDog }) => {
 
     // === DATENAUFBEREITUNG ===
     const nameParts = customer.name ? customer.name.split(' ') : [''];
@@ -1443,11 +1445,23 @@ const CustomerDetailPage: FC<{
                                 {customerDocuments.map((doc: any) => (
                                     <li key={doc.id}>
                                         <Icon name="file" className="doc-icon" />
-                                        <div className="doc-info" onClick={() => {
-                                            // Erstellt eine URL, um das Dokument vom Backend zu laden
-                                            const docUrl = `${API_BASE_URL}/api/documents/${doc.id}`;
-                                            // Wir simulieren das DocumentFile-Objekt für den Viewer
-                                            setViewingDocument({ name: doc.file_name, type: doc.file_type, url: docUrl, id: doc.id, customerId: String(customer.id), file: new File([], doc.file_name), size: 0 });
+                                        <div className="doc-info" onClick={async () => {
+                                            try {
+                                                const response = await apiClient.get(`/api/documents/${doc.id}`, authToken);
+                                                const actualUrl = response.url;
+                                                setViewingDocument({
+                                                    name: doc.file_name,
+                                                    type: doc.file_type,
+                                                    url: actualUrl,
+                                                    id: doc.id,
+                                                    customerId: String(customer.id),
+                                                    file: new File([], doc.file_name),
+                                                    size: 0
+                                                });
+                                            } catch (error) {
+                                                console.error("Fehler beim Laden des Dokuments:", error);
+                                                alert("Dokument konnte nicht geladen werden.");
+                                            }
                                         }} role="button" tabIndex={0}>
                                             {/* KORREKTUR: Verwendet Backend-Feldnamen `file_name` */}
                                             <div className="doc-name">{doc.file_name}</div>

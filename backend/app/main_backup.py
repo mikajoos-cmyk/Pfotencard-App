@@ -1,15 +1,12 @@
 import os
-# import shutil
-from datetime import datetime
-import secrets
 
-# from starlette.responses import FileResponse
 from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
+from datetime import timedelta
 
 from . import crud, models, schemas, auth
 from .database import engine, get_db
@@ -19,17 +16,15 @@ from jose import jwt
 import time
 
 # This creates the tables if they don't exist.
+# In a production environment, you would use Alembic for migrations.
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-# LÖSCHEN:
-# UPLOADS_DIR = "uploads"
-# os.makedirs(UPLOADS_DIR, exist_ok=True)
 
-# HINZUFÜGEN (Supabase Client):
+# Supabase Client
 supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
-# Suchen und anpassen:
+# --- CORS Middleware ---
 origins_regex = r"https://(.*\.)?pfotencard\.de|https://.*\.vercel\.app|http://localhost:\d+"
 
 app.add_middleware(
@@ -40,33 +35,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def log_requests(request, call_next):
+    print(f"DEBUG: Request to {request.url.path}")
+    return await call_next(request)
+
 @app.get("/")
 def read_root():
-    return {"message": "Willkommen bei Pfotencard!"}
+    return {"message": "Willkommen bei meiner API!"}
 
 # --- AUTHENTICATION ---
 @app.post("/api/login", response_model=schemas.Token)
 async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
-    print(f"Login attempt for: {form_data.username}")
     user = crud.get_user_by_email(db, email=form_data.username)
-    
+    print(34567, form_data)
+    print(39837, user, not auth.verify_password(form_data.password, user.hashed_password), form_data.password, user.hashed_password)
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
-        print(f"Login failed for: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    print(f"Login successful for: {form_data.username}")
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    
     # Fetch full user details for the response
-    # We use model_validate instead of from_orm for Pydantic v2
-    full_user_details = schemas.User.model_validate(user)
+    full_user_details = schemas.User.from_orm(user)
     return {"access_token": access_token, "token_type": "bearer", "user": full_user_details}
 
 @app.get("/api/users/me", response_model=schemas.User)
@@ -427,7 +422,6 @@ async def upload_document(  # WICHTIG: async hinzufügen
     upload_file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(auth.get_current_active_user),
-    tenant: models.Tenant = Depends(auth.get_current_tenant)
 ):
     if current_user.role not in ['admin', 'mitarbeiter'] and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -435,8 +429,8 @@ async def upload_document(  # WICHTIG: async hinzufügen
     # Dateiinhalt lesen (await ist hier wichtig!)
     file_content = await upload_file.read()
     
-    # Pfad im Bucket: tenant_id/user_id/filename
-    file_path_in_bucket = f"{tenant.id}/{user_id}/{upload_file.filename}"
+    # Pfad im Bucket: user_id/filename
+    file_path_in_bucket = f"{user_id}/{upload_file.filename}"
 
     try:
         supabase.storage.from_("documents").upload(
@@ -449,16 +443,15 @@ async def upload_document(  # WICHTIG: async hinzufügen
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
     # In DB speichern (Pfad ist jetzt der Bucket-Pfad)
-    return crud.create_document(db, user_id, tenant.id, upload_file.filename, upload_file.content_type, file_path_in_bucket)
+    return crud.create_document(db, user_id, upload_file.filename, upload_file.content_type, file_path_in_bucket)
 
 @app.get("/api/documents/{document_id}")
 def read_document(
     document_id: int,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(auth.get_current_active_user),
-    tenant: models.Tenant = Depends(auth.get_current_tenant)
 ):
-    doc = crud.get_document(db, document_id, tenant.id)
+    doc = crud.get_document(db, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
         
@@ -469,7 +462,10 @@ def read_document(
         # Signierte URL für 60 Sekunden erstellen
         res = supabase.storage.from_("documents").create_signed_url(doc.file_path, 60)
         # Wir geben die URL als JSON zurück
-        return {"url": res["signedURL"]}
+        if isinstance(res, dict) and "signedURL" in res:
+            return {"url": res["signedURL"]}
+        else:
+            return {"url": res}
     except Exception as e:
          raise HTTPException(status_code=404, detail="File not found in storage")
 
@@ -478,9 +474,8 @@ def delete_document(
     document_id: int,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(auth.get_current_active_user),
-    tenant: models.Tenant = Depends(auth.get_current_tenant)
 ):
-    doc = crud.get_document(db, document_id, tenant.id)
+    doc = crud.get_document(db, document_id)
     if not doc: raise HTTPException(status_code=404, detail="Document not found")
     
     if current_user.role not in ['admin', 'mitarbeiter'] and current_user.id != doc.user_id:
@@ -492,8 +487,38 @@ def delete_document(
     except Exception as e:
         print(f"Supabase Delete Error: {e}")
 
-    crud.delete_document(db, document_id, tenant.id)
+    crud.delete_document(db, document_id)
     return {"ok": True}
+
+@app.post("/api/upload/image")
+async def upload_public_image( # WICHTIG: async hinzufügen
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(auth.get_current_active_user)
+):
+    if current_user.role not in ['admin', 'mitarbeiter']:
+         raise HTTPException(status_code=403, detail="Not authorized")
+         
+    import secrets
+    from datetime import datetime
+    file_ext = os.path.splitext(file.filename)[1]
+    safe_name = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(4)}{file_ext}"
+    
+    file_content = await file.read()
+    
+    try:
+        supabase.storage.from_("public_uploads").upload(
+            path=safe_name,
+            file=file_content,
+            file_options={"content-type": file.content_type, "upsert": "true"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Storage Error: {str(e)}")
+        
+    project_url = settings.SUPABASE_URL
+    public_url = f"{project_url}/storage/v1/object/public/public_uploads/{safe_name}"
+    
+    return {"url": public_url}
 
 @app.post("/api/users/{user_id}/dogs", response_model=schemas.Dog)
 def create_dog_for_user_endpoint(
@@ -537,32 +562,3 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     # Wir erstellen NUR den lokalen Datenbank-User.
     # Der Supabase-Auth-User wurde bereits vom Frontend erstellt.
     return crud.create_user(db=db, user=user)
-
-@app.post("/api/upload/image")
-async def upload_public_image( # WICHTIG: async hinzufügen
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    tenant: models.Tenant = Depends(auth.get_current_tenant),
-    current_user: schemas.User = Depends(auth.get_current_active_user)
-):
-    if current_user.role not in ['admin', 'mitarbeiter']:
-         raise HTTPException(status_code=403, detail="Not authorized")
-         
-    file_ext = os.path.splitext(file.filename)[1]
-    safe_name = f"{tenant.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(4)}{file_ext}"
-    
-    file_content = await file.read()
-    
-    try:
-        supabase.storage.from_("public_uploads").upload(
-            path=safe_name,
-            file=file_content,
-            file_options={"content-type": file.content_type, "upsert": "true"}
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Storage Error: {str(e)}")
-        
-    project_url = settings.SUPABASE_URL
-    public_url = f"{project_url}/storage/v1/object/public/public_uploads/{safe_name}"
-    
-    return {"url": public_url}
