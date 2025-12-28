@@ -58,7 +58,10 @@ const apiClient = {
                 'Authorization': `Bearer ${token}`,
             },
         });
-        if (!response.ok) throw new Error(`API request failed: ${response.statusText}`);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || `API request failed: ${response.statusText}`);
+        }
         return response.json();
     },
     post: async (path: string, data: any, token: string | null) => {
@@ -139,6 +142,18 @@ const apiClient = {
             throw new Error(errorData.detail || `File upload failed`);
         }
         return response.json();
+    },
+    getDocumentUrl: async (documentId: number, token: string | null) => {
+        if (!token) throw new Error("No auth token provided");
+        const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) throw new Error(`API request failed: ${response.statusText}`);
+        const data = await response.json();
+        return data.url;
     },
 };
 
@@ -1058,7 +1073,8 @@ const CustomerDetailPage: FC<{
     onUpdateStatus: (userId: string, statusType: 'vip' | 'expert', value: boolean) => void;
     setDogFormModal: (modalState: { isOpen: boolean; dog: any | null }) => void;
     setDeletingDog: (dog: any | null) => void;
-}> = ({ customer, transactions, setView, handleLevelUp, onSave, currentUser, users, documents, onUploadDocuments, onDeleteDocument, fetchAppData, onDeleteUserClick, onUpdateStatus, onToggleVipStatus, onToggleExpertStatus, setDogFormModal, setDeletingDog }) => {
+    setServerLoading: (loadingState: { active: boolean; message: string }) => void;
+}> = ({ customer, transactions, setView, handleLevelUp, onSave, currentUser, users, onUploadDocuments, onDeleteDocument, fetchAppData, authToken, onDeleteUserClick, onToggleVipStatus, onToggleExpertStatus, setDogFormModal, setDeletingDog, setServerLoading }) => {
 
     // === DATENAUFBEREITUNG ===
     const nameParts = customer.name ? customer.name.split(' ') : [''];
@@ -1443,11 +1459,25 @@ const CustomerDetailPage: FC<{
                                 {customerDocuments.map((doc: any) => (
                                     <li key={doc.id}>
                                         <Icon name="file" className="doc-icon" />
-                                        <div className="doc-info" onClick={() => {
-                                            // Erstellt eine URL, um das Dokument vom Backend zu laden
-                                            const docUrl = `${API_BASE_URL}/api/documents/${doc.id}`;
-                                            // Wir simulieren das DocumentFile-Objekt für den Viewer
-                                            setViewingDocument({ name: doc.file_name, type: doc.file_type, url: docUrl, id: doc.id, customerId: String(customer.id), file: new File([], doc.file_name), size: 0 });
+                                        <div className="doc-info" onClick={async () => {
+                                            try {
+                                                setServerLoading({ active: true, message: 'Lade Dokument...' });
+                                                const signedUrl = await apiClient.getDocumentUrl(doc.id, authToken);
+                                                setViewingDocument({
+                                                    name: doc.file_name,
+                                                    type: doc.file_type,
+                                                    url: signedUrl,
+                                                    id: doc.id,
+                                                    customerId: String(customer.id),
+                                                    file: new File([], doc.file_name),
+                                                    size: 0
+                                                });
+                                            } catch (err) {
+                                                console.error("Fehler beim Laden des Dokument-Links:", err);
+                                                alert("Dokument konnte nicht geladen werden.");
+                                            } finally {
+                                                setServerLoading({ active: false, message: '' });
+                                            }
                                         }} role="button" tabIndex={0}>
                                             {/* KORREKTUR: Verwendet Backend-Feldnamen `file_name` */}
                                             <div className="doc-name">{doc.file_name}</div>
@@ -3012,6 +3042,7 @@ const App: FC = () => {
                                 onDeleteUserClick={setDeleteUserModal}
                                 setDogFormModal={setDogFormModal}
                                 setDeletingDog={setDeletingDog}
+                                setServerLoading={setServerLoading}
                             />
                         ) : (
                             <CustomerTransactionsPage transactions={transactions} />
@@ -3052,6 +3083,7 @@ const App: FC = () => {
                 onToggleExpertStatus={onToggleExpertStatus}
                 setDogFormModal={setDogFormModal}
                 setDeletingDog={setDeletingDog}
+                setServerLoading={setServerLoading}
             />;
         }
         if (view.page === 'customers' && view.subPage === 'transactions' && view.customerId) {

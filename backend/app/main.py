@@ -35,6 +35,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def log_requests(request, call_next):
+    print(f"DEBUG: Request to {request.url.path}")
+    return await call_next(request)
+
 @app.get("/")
 def read_root():
     return {"message": "Willkommen bei meiner API!"}

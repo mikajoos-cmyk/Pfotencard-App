@@ -8,5 +8,10 @@
             "source": "/(.*)",
             "destination": "/index.html"
         }
-    ]
+    ],
+    "functions": {
+        "backend/app/main.py": {
+            "runtime": "@vercel/python"
+        }
+    }
 }
