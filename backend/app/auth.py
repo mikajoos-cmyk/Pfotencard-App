@@ -49,13 +49,13 @@ async def get_current_active_user(
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="STALE SERVER DETECTED",
+        detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     
     # --- DEBUGGING START ---
     print(f"DEBUG: Starte Token-Validierung...")
-    print(f"DEBUG: Token (Start): {token[:10]}...")
+    # Wir zeigen nur die ersten 5 Zeichen des Secrets, um sicherzugehen, dass es das richtige ist
     safe_secret_preview = settings.SECRET_KEY[:5] if settings.SECRET_KEY else "NONE"
     print(f"DEBUG: Verwendetes SECRET_KEY (Start): {safe_secret_preview}...")
     # --- DEBUGGING END ---
@@ -79,35 +79,28 @@ async def get_current_active_user(
         email: str = payload.get("email")
         
         if email is None:
-            print(f"DEBUG: FEHLER - Keine E-Mail im Token gefunden. Payload: {payload.keys()}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Auth error: No email in token payload. Keys found: {list(payload.keys())}",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            print("DEBUG: FEHLER - Keine E-Mail im Token-Feld 'email' gefunden.")
+            raise credentials_exception
             
         print(f"DEBUG: E-Mail aus Token extrahiert: {email}")
         token_data = schemas.TokenData(email=email)
         
     except JWTError as e:
-        print(f"DEBUG: JWT Error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Auth error: {str(e)}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        print(f"DEBUG: JWT Error (Dekodierung fehlgeschlagen): {str(e)}")
+        # Häufiger Fehler: Signature verification failed -> Falsches Secret
+        raise credentials_exception
 
+    # 3. Benutzer in der Datenbank suchen
     user = crud.get_user_by_email(db, email=token_data.email)
+    
     if user is None:
-        print(f"DEBUG: User not found: {token_data.email}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"User {token_data.email} not found in DB",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        print(f"DEBUG: FEHLER - User mit E-Mail '{token_data.email}' wurde in der SQL-Datenbank NICHT gefunden.")
+        # Falls der Token gültig ist, aber der User fehlt -> 401
+        raise credentials_exception
 
     if not user.is_active:
-        raise HTTPException(status_code=400, detail="User is inactive")
+        print(f"DEBUG: FEHLER - User '{token_data.email}' ist inaktiv.")
+        raise HTTPException(status_code=400, detail="Inactive user")
 
     print(f"DEBUG: Login erfolgreich für User ID: {user.id}")
     return user

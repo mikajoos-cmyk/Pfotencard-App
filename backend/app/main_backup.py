@@ -1,6 +1,4 @@
 import os
-import secrets
-from datetime import datetime, timedelta
 
 from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
 from fastapi.responses import RedirectResponse, JSONResponse
@@ -8,6 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
+from datetime import timedelta
 
 from . import crud, models, schemas, auth
 from .database import engine, get_db
@@ -17,15 +16,16 @@ from jose import jwt
 import time
 
 # This creates the tables if they don't exist.
+# In a production environment, you would use Alembic for migrations.
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# Supabase Client Initialisierung
+# Supabase Client
 supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
 # --- CORS Middleware ---
-origins_regex = r"https://(.*\.)?pfotencard\.de|https://.*\.vercel\.app|http://localhost:\d+|http://127.0.0.1:\d+"
+origins_regex = r"https://(.*\.)?pfotencard\.de|https://.*\.vercel\.app|http://localhost:\d+"
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,33 +35,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def log_requests(request, call_next):
+    print(f"DEBUG: Request to {request.url.path}")
+    return await call_next(request)
+
 @app.get("/")
 def read_root():
-    return {"message": "Willkommen bei Pfotencard!"}
+    return {"message": "Willkommen bei meiner API!"}
 
 # --- AUTHENTICATION ---
 @app.post("/api/login", response_model=schemas.Token)
 async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
-    print(f"Login attempt for: {form_data.username}")
     user = crud.get_user_by_email(db, email=form_data.username)
-    
+    print(34567, form_data)
+    print(39837, user, not auth.verify_password(form_data.password, user.hashed_password), form_data.password, user.hashed_password)
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
-        print(f"Login failed for: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    print(f"Login successful for: {form_data.username}")
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    
     # Fetch full user details for the response
-    # We use model_validate instead of from_orm for Pydantic v2
-    full_user_details = schemas.User.model_validate(user)
+    full_user_details = schemas.User.from_orm(user)
     return {"access_token": access_token, "token_type": "bearer", "user": full_user_details}
 
 @app.get("/api/users/me", response_model=schemas.User)
@@ -417,19 +417,19 @@ def update_dog_endpoint(
     return crud.update_dog(db=db, dog_id=dog_id, dog=dog_update)
 
 @app.post("/api/users/{user_id}/documents", response_model=schemas.Document)
-async def upload_document(
+async def upload_document(  # WICHTIG: async hinzufügen
     user_id: int,
     upload_file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(auth.get_current_active_user)
+    current_user: schemas.User = Depends(auth.get_current_active_user),
 ):
     if current_user.role not in ['admin', 'mitarbeiter'] and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    # Dateiinhalt lesen
+    # Dateiinhalt lesen (await ist hier wichtig!)
     file_content = await upload_file.read()
     
-    # Pfad im Bucket: user_id/filename (Tenant Logik entfernt, da nicht vorhanden)
+    # Pfad im Bucket: user_id/filename
     file_path_in_bucket = f"{user_id}/{upload_file.filename}"
 
     try:
@@ -449,7 +449,7 @@ async def upload_document(
 def read_document(
     document_id: int,
     db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(auth.get_current_active_user)
+    current_user: schemas.User = Depends(auth.get_current_active_user),
 ):
     doc = crud.get_document(db, document_id)
     if not doc:
@@ -465,7 +465,6 @@ def read_document(
         if isinstance(res, dict) and "signedURL" in res:
             return {"url": res["signedURL"]}
         else:
-            # Je nach supabase-py Version kann das Ergebnis anders aussehen
             return {"url": res}
     except Exception as e:
          raise HTTPException(status_code=404, detail="File not found in storage")
@@ -474,11 +473,10 @@ def read_document(
 def delete_document(
     document_id: int,
     db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(auth.get_current_active_user)
+    current_user: schemas.User = Depends(auth.get_current_active_user),
 ):
     doc = crud.get_document(db, document_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+    if not doc: raise HTTPException(status_code=404, detail="Document not found")
     
     if current_user.role not in ['admin', 'mitarbeiter'] and current_user.id != doc.user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -493,7 +491,7 @@ def delete_document(
     return {"ok": True}
 
 @app.post("/api/upload/image")
-async def upload_public_image(
+async def upload_public_image( # WICHTIG: async hinzufügen
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(auth.get_current_active_user)
@@ -501,6 +499,8 @@ async def upload_public_image(
     if current_user.role not in ['admin', 'mitarbeiter']:
          raise HTTPException(status_code=403, detail="Not authorized")
          
+    import secrets
+    from datetime import datetime
     file_ext = os.path.splitext(file.filename)[1]
     safe_name = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(4)}{file_ext}"
     

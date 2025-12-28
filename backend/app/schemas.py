@@ -106,7 +106,7 @@ class User(UserBase):
     dogs: List[Dog] = []
     transactions: List[Transaction] = []
     
-    # HINZUFÜGEN:
+    # HINZUFÜGEN (mit Anführungszeichen wie gewünscht):
     documents: List['Document'] = []
     achievements: List['Achievement'] = []
     # -----------
