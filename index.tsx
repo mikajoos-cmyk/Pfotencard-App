@@ -1186,7 +1186,6 @@ const CustomerDetailPage: FC<{
     // === LOGIK FÜR LEVEL-ANZEIGE ===
     const canLevelUp = areLevelRequirementsMet(customer);
     const customerTransactions = transactions.filter(t => t.user_id === customer.id);
-    const creator = users.find(u => u.id === customer.createdBy);
     const currentLevelId = customer.level_id || 1;
     const showLevelUpButton = canLevelUp && (currentUser.role === 'admin' || currentUser.role === 'mitarbeiter') && currentLevelId < 5;
 
@@ -1417,7 +1416,7 @@ const CustomerDetailPage: FC<{
                             <li><span className="label">Guthaben</span><span className="value">€ {Math.floor(customer.balance).toLocaleString('de-DE')}</span></li>
                             <li><span className="label">Transaktionen</span><span className="value">{customerTransactions.length}</span></li>
                             <li><span className="label">Kunde seit</span><span className="value">{new Date(customer.customer_since).toLocaleDateString('de-DE')}</span></li>
-                            <li><span className="label">Erstellt von</span><span className="value">{creator?.name || '-'}</span></li>
+                            <li><span className="label">Kunden Nummer</span><span className="value">{customer.id}</span></li>
                         </ul>
                     </div>
                     <div className="side-card qr-code-container">
