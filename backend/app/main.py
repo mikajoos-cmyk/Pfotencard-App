@@ -1,8 +1,7 @@
 import os
-import shutil
 
-from starlette.responses import FileResponse
 from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -21,27 +20,16 @@ import time
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-UPLOADS_DIR = "uploads"
-os.makedirs(UPLOADS_DIR, exist_ok=True)
+
+# Supabase Client
+supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
 # --- CORS Middleware ---
-origins = [
-    "https://shadowsr769.vercel.app",
-    "https://pfotencard.joos-soft-solutions.de",
-    "https://www.pfotencard.joos-soft-solutions.de",
-    "https://pfotencard.vercel.app",
-    "http://localhost:3000",         # Gängiger React-Port
-    "http://localhost:5173",         # Gängiger Vite-Port
-    "http://127.0.0.1:5173",         # Vite-Port mit IP statt Name
-    "http://127.0.0.1:3000",         # React-Port mit IP statt Name
-    "http://localhost:5174",
-    "http://localhost:5175",
-]
+origins_regex = r"https://(.*\.)?pfotencard\.de|https://.*\.vercel\.app|http://localhost:\d+"
 
-# Allows the frontend (running on a different port) to communicate with the backend.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, # In production, restrict this to your frontend's URL
+    allow_origin_regex=origins_regex,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -424,51 +412,108 @@ def update_dog_endpoint(
     return crud.update_dog(db=db, dog_id=dog_id, dog=dog_update)
 
 @app.post("/api/users/{user_id}/documents", response_model=schemas.Document)
-def upload_document_for_user(
+async def upload_document(  # WICHTIG: async hinzufügen
     user_id: int,
     upload_file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(auth.get_current_active_user)
+    current_user: schemas.User = Depends(auth.get_current_active_user),
 ):
     if current_user.role not in ['admin', 'mitarbeiter'] and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    file_path = os.path.join(UPLOADS_DIR, upload_file.filename)
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(upload_file.file, buffer)
+    # Dateiinhalt lesen (await ist hier wichtig!)
+    file_content = await upload_file.read()
+    
+    # Pfad im Bucket: user_id/filename
+    file_path_in_bucket = f"{user_id}/{upload_file.filename}"
 
-    return crud.create_document(
-        db=db, user_id=user_id, file_name=upload_file.filename,
-        file_type=upload_file.content_type, file_path=file_path
-    )
+    try:
+        supabase.storage.from_("documents").upload(
+            path=file_path_in_bucket,
+            file=file_content,
+            file_options={"content-type": upload_file.content_type, "upsert": "true"}
+        )
+    except Exception as e:
+        print(f"Upload Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+    # In DB speichern (Pfad ist jetzt der Bucket-Pfad)
+    return crud.create_document(db, user_id, upload_file.filename, upload_file.content_type, file_path_in_bucket)
 
 @app.get("/api/documents/{document_id}")
-def read_document(document_id: int, db: Session = Depends(get_db)):
-    db_doc = crud.get_document(db, document_id=document_id)
-    if not db_doc or not os.path.exists(db_doc.file_path):
+def read_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(auth.get_current_active_user),
+):
+    doc = crud.get_document(db, document_id)
+    if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    return FileResponse(path=db_doc.file_path, filename=db_doc.file_name)
+        
+    if current_user.role not in ['admin', 'mitarbeiter'] and current_user.id != doc.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    try:
+        # Signierte URL für 60 Sekunden erstellen
+        res = supabase.storage.from_("documents").create_signed_url(doc.file_path, 60)
+        # Wir geben die URL als JSON zurück
+        if isinstance(res, dict) and "signedURL" in res:
+            return {"url": res["signedURL"]}
+        else:
+            return {"url": res}
+    except Exception as e:
+         raise HTTPException(status_code=404, detail="File not found in storage")
 
 @app.delete("/api/documents/{document_id}")
-def delete_document_endpoint(
+def delete_document(
     document_id: int,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(auth.get_current_active_user),
+):
+    doc = crud.get_document(db, document_id)
+    if not doc: raise HTTPException(status_code=404, detail="Document not found")
+    
+    if current_user.role not in ['admin', 'mitarbeiter'] and current_user.id != doc.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Datei aus Supabase löschen
+    try:
+        supabase.storage.from_("documents").remove([doc.file_path])
+    except Exception as e:
+        print(f"Supabase Delete Error: {e}")
+
+    crud.delete_document(db, document_id)
+    return {"ok": True}
+
+@app.post("/api/upload/image")
+async def upload_public_image( # WICHTIG: async hinzufügen
+    file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(auth.get_current_active_user)
 ):
-    db_doc = crud.get_document(db, document_id=document_id)
-    if not db_doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    if current_user.role not in ['admin', 'mitarbeiter'] and current_user.id != db_doc.user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    # Physische Datei löschen
-    if os.path.exists(db_doc.file_path):
-        os.remove(db_doc.file_path)
-
-    # Datenbankeintrag löschen
-    crud.delete_document(db, document_id=document_id)
-    return {"ok": True, "detail": "Document deleted successfully"}
+    if current_user.role not in ['admin', 'mitarbeiter']:
+         raise HTTPException(status_code=403, detail="Not authorized")
+         
+    import secrets
+    from datetime import datetime
+    file_ext = os.path.splitext(file.filename)[1]
+    safe_name = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(4)}{file_ext}"
+    
+    file_content = await file.read()
+    
+    try:
+        supabase.storage.from_("public_uploads").upload(
+            path=safe_name,
+            file=file_content,
+            file_options={"content-type": file.content_type, "upsert": "true"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Storage Error: {str(e)}")
+        
+    project_url = settings.SUPABASE_URL
+    public_url = f"{project_url}/storage/v1/object/public/public_uploads/{safe_name}"
+    
+    return {"url": public_url}
 
 @app.post("/api/users/{user_id}/dogs", response_model=schemas.Dog)
 def create_dog_for_user_endpoint(
